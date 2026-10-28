@@ -4,7 +4,8 @@
   "description": "Store-and-forward teledentistry triage for CHWs in rural Kenya",
   "workspaces": [
     "packages/shared",
-    "apps/api"
+    "apps/api",
+    "apps/mobile"
   ],
   "engines": {
     "node": ">=22"
@@ -15,7 +16,8 @@
     "test": "npm run test --workspaces --if-present",
     "db:migrate": "npm run db:migrate -w @smilesync/api",
     "db:seed": "npm run db:seed -w @smilesync/api",
-    "dev:api": "npm run dev -w @smilesync/api"
+    "dev:api": "npm run dev -w @smilesync/api",
+    "dev:mobile": "npm run start -w @smilesync/mobile"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
