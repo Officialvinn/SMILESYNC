@@ -46,10 +46,10 @@ export function resizeFor(width: number, height: number, maxEdge: number): { wid
 }
 
 /** Encodes with each step until the result fits under `limit` bytes. */
-export async function compressToLimit(
-  encode: (step: CompressionStep, index: number) => Promise<Uint8Array>,
+export async function compressToLimit<B extends Uint8Array>(
+  encode: (step: CompressionStep, index: number) => Promise<B>,
   limit: number = PER_IMAGE_MAX_BYTES,
-): Promise<{ bytes: Uint8Array; step: CompressionStep }> {
+): Promise<{ bytes: B; step: CompressionStep }> {
   for (const [i, step] of COMPRESSION_STEPS.entries()) {
     const bytes = await encode(step, i);
     if (bytes.byteLength <= limit) return { bytes, step };

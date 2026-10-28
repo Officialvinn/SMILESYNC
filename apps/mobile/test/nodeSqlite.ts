@@ -5,36 +5,17 @@
  */
 import { DatabaseSync } from 'node:sqlite';
 import type { SqlDb, SqlValue } from '../src/core/ports';
+import { serializedDb } from '../src/core/serialDb';
 
 export function openMemoryDb(): SqlDb & { raw: DatabaseSync } {
   const raw = new DatabaseSync(':memory:');
-  const db: SqlDb & { raw: DatabaseSync } = {
-    raw,
-    async execAsync(sql) {
-      raw.exec(sql);
-    },
-    async runAsync(sql, params: SqlValue[] = []) {
-      const r = raw.prepare(sql).run(...params);
-      return { changes: Number(r.changes) };
-    },
-    async getAllAsync<T>(sql: string, params: SqlValue[] = []) {
-      return raw.prepare(sql).all(...params) as T[];
-    },
-    async getFirstAsync<T>(sql: string, params: SqlValue[] = []) {
-      return (raw.prepare(sql).get(...params) as T | undefined) ?? null;
-    },
-    async transaction(task) {
-      raw.exec('BEGIN IMMEDIATE');
-      try {
-        await task(db);
-        raw.exec('COMMIT');
-      } catch (e) {
-        raw.exec('ROLLBACK');
-        throw e;
-      }
-    },
-  };
-  return db;
+  const db = serializedDb({
+    execAsync: async (sql) => void raw.exec(sql),
+    runAsync: async (sql, params: SqlValue[] = []) => raw.prepare(sql).run(...params),
+    getAllAsync: async <T,>(sql: string, params: SqlValue[] = []) => raw.prepare(sql).all(...params) as T[],
+    getFirstAsync: async <T,>(sql: string, params: SqlValue[] = []) => (raw.prepare(sql).get(...params) as T | undefined) ?? null,
+  });
+  return Object.assign(db, { raw });
 }
 
 export class MemoryKV {
