@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck and test
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:17.11-alpine
+        env:
+          POSTGRES_USER: smilesync
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: smilesync_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smilesync -d smilesync_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Throwaway CI database; not a secret.
+      TEST_DATABASE_URL: postgresql://smilesync:ci-only-password@localhost:5432/smilesync_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: Build API image
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/api/Dockerfile --target runtime -t smilesync-api:ci .
+      - run: docker build -f apps/api/Dockerfile --target tools -t smilesync-migrate:ci .
+      - name: Validate docker-compose file
+        run: cp .env.example .env && sed -i 's/^\(POSTGRES_PASSWORD\|APP_DB_PASSWORD\|JWT_SECRET\|PATIENT_DATA_KEY\)=$/\1=ci-placeholder/' .env && docker compose config --quiet
