@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Original docs package; its contents are unpacked into the repo
+SmileSync_claude_code_package.zip
+# Local data
+/data/
+apps/api/storage/
+playwright-report/
+test-results/
+.expo/
