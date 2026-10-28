@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+apps/api/src/generated
+.git
+.env
+*.zip
+docs
+apps/mobile
+apps/web
