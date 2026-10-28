@@ -68,3 +68,13 @@ export function can(actor: Actor, action: Action, resource: ResourceContext = {}
   const rule = rules && Object.hasOwn(rules, action) ? rules[action] : undefined;
   return rule ? rule(actor, resource) : false;
 }
+
+/**
+ * True if the role can perform the action on at least some resource.
+ * The API checks this before loading a resource, so a role that may never
+ * perform an action gets 403 without learning whether the resource exists.
+ */
+export function roleMayEver(role: Role, action: Action): boolean {
+  const rules = Object.hasOwn(RULES, role) ? RULES[role] : undefined;
+  return Boolean(rules && Object.hasOwn(rules, action));
+}
