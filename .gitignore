@@ -15,3 +15,4 @@ apps/api/storage/
 playwright-report/
 test-results/
 .expo/
+apps/api/src/generated/
