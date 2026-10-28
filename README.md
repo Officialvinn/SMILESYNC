@@ -14,7 +14,7 @@ is in [docs/TRACEABILITY.md](docs/TRACEABILITY.md).
 ```
 packages/shared   Types, Zod schemas, access rules, offline sync engine (plain TypeScript)
 apps/api          REST API: Express + Prisma + PostgreSQL
-apps/mobile       CHW app: React Native + Expo (Sprint 1)
+apps/mobile       CHW app: React Native + Expo SDK 57 development build
 apps/web          Dentist and admin dashboard: React + Vite (Sprint 3)
 infra/            Caddy (TLS 1.3) and PostgreSQL init scripts
 docs/             SRS, diagrams, traceability
@@ -24,6 +24,7 @@ docs/             SRS, diagrams, traceability
 
 - Node.js 24
 - Docker Desktop, for PostgreSQL and the local stack
+- For the mobile app on a device: Android Studio, or Xcode with CocoaPods. See `apps/mobile/README.md`
 
 ## First-time setup
 
@@ -70,6 +71,11 @@ npm run db:migrate
 npm run db:seed
 npm run dev:api        # http://localhost:3000
 ```
+
+## Run the mobile app
+
+See [apps/mobile/README.md](apps/mobile/README.md). Its core logic is tested with
+`npm test` like the rest of the repo, with no phone needed.
 
 ## Rules for contributors
 
