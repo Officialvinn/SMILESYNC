@@ -3,9 +3,9 @@
  * random key kept in the Keychain / Keystore. FR 4.2: the schema it opens.
  */
 import { describe, expect, it } from 'vitest';
-import { MemoryKV, openMemoryDb, seqRandom } from '../../test/nodeSqlite.js';
-import type { SqlDb } from './ports.js';
-import { DB_KEY_NAME, DatabaseNotEncryptedError, getOrCreateDbKey, migrate, openLocalDb, SCHEMA_VERSION } from './localDb.js';
+import { MemoryKV, openMemoryDb, seqRandom } from '../../test/nodeSqlite';
+import type { SqlDb } from './ports';
+import { DB_KEY_NAME, DatabaseNotEncryptedError, getOrCreateDbKey, migrate, openLocalDb, SCHEMA_VERSION } from './localDb';
 
 describe('database key (NFR 1)', () => {
   it('creates a 256-bit key once and reuses it', async () => {

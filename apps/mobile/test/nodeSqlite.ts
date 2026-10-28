@@ -4,7 +4,7 @@
  * the unlock tests rely on to prove the app refuses an unencrypted database.
  */
 import { DatabaseSync } from 'node:sqlite';
-import type { SqlDb, SqlValue } from '../src/core/ports.js';
+import type { SqlDb, SqlValue } from '../src/core/ports';
 
 export function openMemoryDb(): SqlDb & { raw: DatabaseSync } {
   const raw = new DatabaseSync(':memory:');

@@ -4,8 +4,8 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { NetworkError, type LoginResponse } from '@smilesync/shared';
-import { MemoryKV } from '../../test/nodeSqlite.js';
-import { ApiError, AuthService, MAX_OFFLINE_PIN_FAILURES, MESSAGES, bcryptPinHasher, type AuthApi } from './offlineAuth.js';
+import { MemoryKV } from '../../test/nodeSqlite';
+import { ApiError, AuthService, MAX_OFFLINE_PIN_FAILURES, MESSAGES, bcryptPinHasher, type AuthApi } from './offlineAuth';
 
 const CHW = { id: '11111111-1111-4111-8111-111111111111', username: 'chw.narok1', role: 'CHW' as const };
 const PIN = '482915';

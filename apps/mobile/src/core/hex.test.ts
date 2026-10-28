@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toBase64, toHex } from './hex.js';
+import { toBase64, toHex } from './hex';
 
 describe('byte helpers', () => {
   it('toHex', () => {
