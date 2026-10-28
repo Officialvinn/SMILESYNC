@@ -4,7 +4,7 @@ import { MAX_SUBMISSION_BYTES } from '@smilesync/shared';
 import {
   COMPRESSION_STEPS, IMAGE_BUDGET_BYTES, ImageTooLargeError, MAX_EXTRA_IMAGES, MAX_IMAGES,
   PER_IMAGE_MAX_BYTES, compressToLimit, resizeFor,
-} from './compression.js';
+} from './compression';
 
 describe('budget', () => {
   it('six images at the per-image limit plus the JSON allowance fit under 2 MB', () => {

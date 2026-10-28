@@ -4,20 +4,22 @@
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PatientInput } from '@smilesync/shared';
-import { openMemoryDb, seqRandom, testUuid } from '../../test/nodeSqlite.js';
-import { CaseLockedError, CaseRepo, ExtraLimitError, SubmissionTooLargeError } from './caseRepo.js';
-import { IMAGE_BUDGET_BYTES, MAX_EXTRA_IMAGES, PER_IMAGE_MAX_BYTES } from './compression.js';
-import { migrate } from './localDb.js';
-import { buildPatient, recordConsent } from './registration.js';
+import { openMemoryDb, seqRandom, testUuid } from '../../test/nodeSqlite';
+import { CaseLockedError, CaseRepo, ExtraLimitError, SubmissionTooLargeError } from './caseRepo';
+import { IMAGE_BUDGET_BYTES, MAX_EXTRA_IMAGES, PER_IMAGE_MAX_BYTES } from './compression';
+import { migrate } from './localDb';
+import { buildPatient, recordConsent } from './registration';
 
 const CHW_A = '11111111-1111-4111-8111-111111111111';
 const CHW_B = '22222222-2222-4222-8222-222222222222';
 const NOW = '2026-10-28T09:05:00.000Z';
+// One shared source, so each fixture patient gets a different anonymised ID.
+const random = seqRandom();
 
 function patient(name = 'Amina Test'): PatientInput {
   const r = buildPatient({ name, age: '34', location: 'Narok', sex: '' }, recordConsent(new Date(NOW)), {
     uuid: testUuid,
-    randomBytes: seqRandom(),
+    randomBytes: random,
   });
   if (!r.ok) throw new Error('bad fixture');
   return r.patient;

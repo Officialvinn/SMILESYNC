@@ -1,8 +1,8 @@
 /** FR 3.2: guidance for the 3 standard views, plus optional extras. */
 import { describe, expect, it } from 'vitest';
 import { REQUIRED_VIEWS, VIEW_TYPES } from '@smilesync/shared';
-import { VIEW_GUIDANCE, captureProgress } from './capturePlan.js';
-import { MAX_EXTRA_IMAGES } from './compression.js';
+import { VIEW_GUIDANCE, captureProgress } from './capturePlan';
+import { MAX_EXTRA_IMAGES } from './compression';
 
 describe('VIEW_GUIDANCE', () => {
   it('has a title and at least two steps for every view', () => {

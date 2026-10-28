@@ -1,8 +1,8 @@
 /** FR 2.1 registration, FR 2.2 anonymised ID, FR 2.3 consent before capture. */
 import { describe, expect, it } from 'vitest';
 import { ANON_ID_PATTERN, patientSchema } from '@smilesync/shared';
-import { seqRandom, testUuid } from '../../test/nodeSqlite.js';
-import { CONSENT_POINTS, buildPatient, recordConsent } from './registration.js';
+import { seqRandom, testUuid } from '../../test/nodeSqlite';
+import { CONSENT_POINTS, buildPatient, recordConsent } from './registration';
 
 const deps = { uuid: testUuid, randomBytes: seqRandom() };
 const consent = recordConsent(new Date('2026-10-28T09:00:00.000Z'));
