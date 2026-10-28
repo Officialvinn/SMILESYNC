@@ -92,3 +92,14 @@ describe('fails closed', () => {
     expect(can(admin, 'audit:delete' as Action)).toBe(false);
   });
 });
+
+describe('roleMayEver', () => {
+  it('matches the role matrix, ignoring ownership', async () => {
+    const { roleMayEver } = await import('./permissions.js');
+    for (const action of ACTIONS) {
+      for (const role of ['CHW', 'DENTIST', 'ADMIN'] as const) {
+        expect(roleMayEver(role, action)).toBe(MATRIX[action][role]);
+      }
+    }
+  });
+});
