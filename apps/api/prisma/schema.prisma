@@ -1,0 +1,205 @@
+// SmileSync data model, from the class diagram (SRS Appendix B.2).
+// Differences from the diagram are listed in docs/TRACEABILITY.md.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// FR 1.2
+enum Role {
+  CHW
+  DENTIST
+  ADMIN
+}
+
+/// FR 5.3. PENDING exists only on the phone; a CHECK constraint keeps it out of the server.
+enum CaseStatus {
+  PENDING
+  SYNCED
+  REVIEWED
+}
+
+/// FR 7.1
+enum Priority {
+  ROUTINE
+  URGENT
+  EMERGENCY
+}
+
+/// FR 3.2
+enum ViewType {
+  FRONT
+  UPPER_ARCH
+  LOWER_ARCH
+  EXTRA
+}
+
+/// FR 4.1
+enum SymptomDuration {
+  LESS_THAN_1_DAY
+  DAYS_1_TO_7
+  WEEKS_1_TO_4
+  MORE_THAN_1_MONTH
+}
+
+enum Sex {
+  FEMALE
+  MALE
+  OTHER
+  NOT_STATED
+}
+
+/// User «abstract» and its subclasses CommunityHealthWorker, Dentist and
+/// Administrator, stored as one table with role-specific nullable columns.
+model User {
+  id               String    @id @default(uuid()) @db.Uuid
+  username         String    @unique
+  /// bcrypt hash of the password, or of the 6-digit PIN for CHWs (FR 1.1)
+  passwordHash     String
+  role             Role
+  isActive         Boolean   @default(true)
+  /// CommunityHealthWorker
+  chwCode          String?   @unique
+  assignedSite     String?
+  /// Dentist
+  licenseNumber    String?
+  specialty        String?
+  /// Administrator
+  adminLevel       String?
+  /// Account lockout after repeated failed logins (protects short PINs)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  /// Incremented on deactivate or reset; invalidates issued tokens
+  tokenVersion     Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  registeredPatients Patient[]      @relation("RegisteredBy")
+  submittedCases     Case[]         @relation("SubmittedBy")
+  reviewedCases      Case[]         @relation("ReviewedBy")
+  clinicalNotes      ClinicalNote[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Patient {
+  /// Client-generated UUID (idempotency key, FR 5.2)
+  id             String   @id @db.Uuid
+  /// FR 2.2 anonymised ID (the diagram's patientId)
+  anonId         String   @unique
+  /// FR 2.1 name, AES-256-GCM encrypted by the API (NFR 1). Never sent to dentists.
+  nameEncrypted  String
+  age            Int
+  /// FR 2.1 location: a Kenyan county
+  location       String
+  sex            Sex?
+  /// FR 2.3. A CHECK constraint requires true.
+  consentGiven   Boolean
+  consentDate    DateTime
+  registeredById String   @db.Uuid
+  registeredBy   User     @relation("RegisteredBy", fields: [registeredById], references: [id])
+  createdAt      DateTime @default(now())
+
+  cases Case[]
+
+  @@index([location])
+  @@map("patients")
+}
+
+model Case {
+  /// Client-generated UUID (idempotency key, FR 5.2)
+  id            String     @id @db.Uuid
+  patientId     String     @db.Uuid
+  patient       Patient    @relation(fields: [patientId], references: [id])
+  submittedById String     @db.Uuid
+  submittedBy   User       @relation("SubmittedBy", fields: [submittedById], references: [id])
+  status        CaseStatus @default(SYNCED)
+  priority      Priority?
+  reviewedById  String?    @db.Uuid
+  reviewedBy    User?      @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  /// When the CHW created the case on the phone
+  createdAt     DateTime
+  /// When the server first stored it
+  syncedAt      DateTime   @default(now())
+  reviewedAt    DateTime?
+  updatedAt     DateTime   @updatedAt
+
+  images     OralImage[]
+  assessment SymptomAssessment?
+  notes      ClinicalNote[]
+
+  /// NFR 2: the dentist queue filters by status and sorts by priority or date
+  @@index([status, syncedAt])
+  @@index([priority, syncedAt])
+  @@index([submittedById])
+  @@map("cases")
+}
+
+model OralImage {
+  id         String   @id @db.Uuid
+  caseId     String   @db.Uuid
+  case       Case     @relation(fields: [caseId], references: [id])
+  /// Storage key of the encrypted file (NFR 1)
+  filePath   String
+  sizeKB     Int
+  viewType   ViewType
+  capturedAt DateTime
+  /// SHA-256 of the compressed upload, for integrity checks (FR 5.2)
+  sha256     String
+
+  @@index([caseId])
+  @@map("oral_images")
+}
+
+model SymptomAssessment {
+  id        String          @id @db.Uuid
+  caseId    String          @unique @db.Uuid
+  case      Case            @relation(fields: [caseId], references: [id])
+  /// FR 4.1, CHECK 1..10
+  painLevel Int
+  duration  SymptomDuration
+
+  @@map("symptom_assessments")
+}
+
+model ClinicalNote {
+  /// Client-generated so a retried PUT does not add the note twice
+  id             String   @id @db.Uuid
+  caseId         String   @db.Uuid
+  case           Case     @relation(fields: [caseId], references: [id])
+  authorId       String   @db.Uuid
+  author         User     @relation(fields: [authorId], references: [id])
+  noteText       String
+  referralAdvice String?
+  createdAt      DateTime @default(now())
+
+  @@index([caseId])
+  @@map("clinical_notes")
+}
+
+/// FR 8.2, NFR 4: append-only. A trigger rejects UPDATE, DELETE and TRUNCATE.
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  /// Null only for failed logins with an unknown username
+  userId       String?  @db.Uuid
+  user         User?    @relation(fields: [userId], references: [id])
+  action       String
+  /// ALLOWED or DENIED
+  outcome      String
+  resourceType String?
+  resourceId   String?
+  ipAddress    String?
+  timestamp    DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@map("audit_log")
+}
