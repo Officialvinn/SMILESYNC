@@ -22,3 +22,8 @@ apps/mobile/android/
 
 # Caddy local CA exported for phones
 caddy-root.crt
+.idea/
+
+# Dashboard build output and Playwright artefacts
+apps/web/test-results/
+apps/web/playwright-report/

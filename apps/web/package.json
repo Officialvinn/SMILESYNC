@@ -1,0 +1,26 @@
+{
+  "name": "@smilesync/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SmileSync dashboard for dentists and administrators",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build -w @smilesync/shared && tsc --noEmit && vite build",
+    "typecheck": "npm run build -w @smilesync/shared && tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@smilesync/shared": "0.1.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.2.1",
+    "vite": "8.3.5"
+  }
+}

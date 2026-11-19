@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/shared",
     "apps/api",
-    "apps/mobile"
+    "apps/mobile",
+    "apps/web"
   ],
   "engines": {
     "node": ">=22"
@@ -17,7 +18,9 @@
     "db:migrate": "npm run db:migrate -w @smilesync/api",
     "db:seed": "npm run db:seed -w @smilesync/api",
     "dev:api": "npm run dev -w @smilesync/api",
-    "dev:mobile": "npm run start -w @smilesync/mobile"
+    "dev:mobile": "npm run start -w @smilesync/mobile",
+    "dev:web": "npm run dev -w @smilesync/web",
+    "e2e": "npm run e2e -w @smilesync/web"
   },
   "devDependencies": {
     "@types/node": "24.19.2",
@@ -25,6 +28,7 @@
     "vitest": "5.0.4"
   },
   "overrides": {
-    "react": "19.2.3"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   }
 }
