@@ -106,6 +106,15 @@ describe('AuthService (FR 1.1)', () => {
     expect(await auth.login(CHW.username, PIN)).toEqual({ ok: false, message: MESSAGES.firstLoginNeedsInternet });
   });
 
+  it('a rate-limited login (429) shows the message but keeps the offline credential', async () => {
+    await auth.login(CHW.username, PIN);
+    const limited: AuthApi = { login: async () => { throw new ApiError(429, 'Too many failed logins from this network.'); } };
+    const auth2 = new AuthService({ api: limited, kv, hasher: bcryptPinHasher(4) });
+    expect(await auth2.login(CHW.username, PIN)).toEqual({ ok: false, message: 'Too many failed logins from this network.' });
+    api.mode = 'offline';
+    expect(await auth.login(CHW.username, PIN)).toMatchObject({ ok: true, session: { offline: true } });
+  });
+
   it('a PIN changed on the server replaces the old offline PIN', async () => {
     await auth.login(CHW.username, PIN);
     api.pin = '730264';
