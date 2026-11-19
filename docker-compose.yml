@@ -34,6 +34,10 @@ services:
       PATIENT_DATA_KEY: ${PATIENT_DATA_KEY:?set in .env}
       SEED_PASSWORD: ${SEED_PASSWORD:-}
       SEED_CHW_PIN: ${SEED_CHW_PIN:-}
+      IMAGE_STORAGE_DIR: /app/apps/api/storage
+    volumes:
+      # The seed writes synthetic encrypted images here.
+      - images:/app/apps/api/storage
     depends_on:
       db:
         condition: service_healthy

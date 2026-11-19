@@ -8,10 +8,12 @@
  *   chw.narok1, chw.narok2, chw.marsabit1   PIN SEED_CHW_PIN
  */
 import { createHash } from 'node:crypto';
-import { generateAnonId, type County, type Priority, type SymptomDuration } from '@smilesync/shared';
+import { generateAnonId, type County, type Priority, type Sex, type SymptomDuration } from '@smilesync/shared';
 import { createDb } from '../src/db.js';
 import { hashSecret, validateNewSecret } from '../src/auth/passwords.js';
 import { FieldCrypto } from '../src/security/fieldCrypto.js';
+import { ImageStore } from '../src/storage/imageStore.js';
+import { syntheticOralImage } from './syntheticImage.js';
 
 if (process.env.NODE_ENV === 'production') throw new Error('Refusing to seed a production database');
 
@@ -29,6 +31,7 @@ for (const [role, secret] of [['ADMIN', password], ['CHW', pin]] as const) {
 
 const db = createDb(url);
 const crypto = new FieldCrypto(key);
+const images = new ImageStore(process.env.IMAGE_STORAGE_DIR ?? './storage', crypto);
 
 /** Stable UUID from a label, so re-running the seed updates instead of duplicating. */
 function seedUuid(label: string): string {
@@ -57,17 +60,17 @@ async function main() {
   }
 
   // Synthetic cases: some waiting in the dentist queue (SYNCED), some already REVIEWED.
-  const cases: { chw: string; county: County; age: number; pain: number; duration: SymptomDuration; review?: { priority: Priority; note: string; referral?: string } }[] = [
-    { chw: 'chw.narok1', county: 'Narok', age: 34, pain: 8, duration: 'DAYS_1_TO_7' },
-    { chw: 'chw.narok1', county: 'Narok', age: 9, pain: 3, duration: 'WEEKS_1_TO_4' },
-    { chw: 'chw.narok2', county: 'Narok', age: 61, pain: 10, duration: 'LESS_THAN_1_DAY' },
-    { chw: 'chw.marsabit1', county: 'Marsabit', age: 27, pain: 5, duration: 'MORE_THAN_1_MONTH' },
+  const cases: { chw: string; county: County; age: number; sex: Sex; pain: number; duration: SymptomDuration; review?: { priority: Priority; note: string; referral?: string } }[] = [
+    { chw: 'chw.narok1', county: 'Narok', age: 34, sex: 'FEMALE', pain: 8, duration: 'DAYS_1_TO_7' },
+    { chw: 'chw.narok1', county: 'Narok', age: 9, sex: 'MALE', pain: 3, duration: 'WEEKS_1_TO_4' },
+    { chw: 'chw.narok2', county: 'Narok', age: 61, sex: 'MALE', pain: 10, duration: 'LESS_THAN_1_DAY' },
+    { chw: 'chw.marsabit1', county: 'Marsabit', age: 27, sex: 'FEMALE', pain: 5, duration: 'MORE_THAN_1_MONTH' },
     {
-      chw: 'chw.marsabit1', county: 'Marsabit', age: 45, pain: 9, duration: 'DAYS_1_TO_7',
+      chw: 'chw.marsabit1', county: 'Marsabit', age: 45, sex: 'MALE', pain: 9, duration: 'DAYS_1_TO_7',
       review: { priority: 'EMERGENCY', note: 'Synthetic note: facial swelling with suspected abscess.', referral: 'Refer to the nearest hospital today.' },
     },
     {
-      chw: 'chw.narok2', county: 'Narok', age: 19, pain: 2, duration: 'WEEKS_1_TO_4',
+      chw: 'chw.narok2', county: 'Narok', age: 19, sex: 'FEMALE', pain: 2, duration: 'WEEKS_1_TO_4',
       review: { priority: 'ROUTINE', note: 'Synthetic note: early caries on lower molar.', referral: 'Routine clinic visit within 3 months.' },
     },
   ];
@@ -85,12 +88,13 @@ async function main() {
           nameEncrypted: crypto.encrypt(`Synthetic Patient ${i + 1}`),
           age: c.age,
           location: c.county,
+          sex: c.sex,
           consentGiven: true,
           consentDate: createdAt,
           registeredById: ids[c.chw]!,
         },
       });
-    }
+    } else if (existing.sex !== c.sex) await db.patient.update({ where: { id: patientId }, data: { sex: c.sex } });
     const reviewed = c.review
       ? { status: 'REVIEWED' as const, priority: c.review.priority, reviewedById: ids.dentist1!, reviewedAt: new Date(createdAt.getTime() + 6 * 3600_000) }
       : { status: 'SYNCED' as const };
@@ -104,6 +108,20 @@ async function main() {
       update: { painLevel: c.pain, duration: c.duration },
       create: { id: seedUuid(`assessment:${i}`), caseId, painLevel: c.pain, duration: c.duration },
     });
+    // Three synthetic drawings per case, encrypted like real uploads (NFR 1).
+    for (const [v, viewType] of (['FRONT', 'UPPER_ARCH', 'LOWER_ARCH'] as const).entries()) {
+      const imageId = seedUuid(`image:${i}:${viewType}`);
+      const bytes = syntheticOralImage(viewType, i * 3 + v);
+      const filePath = await images.putStored(imageId, bytes);
+      await db.oralImage.upsert({
+        where: { id: imageId },
+        update: { filePath, sizeKB: Math.ceil(bytes.length / 1024), sha256: createHash('sha256').update(bytes).digest('hex') },
+        create: {
+          id: imageId, caseId, filePath, viewType, capturedAt: createdAt,
+          sizeKB: Math.ceil(bytes.length / 1024), sha256: createHash('sha256').update(bytes).digest('hex'),
+        },
+      });
+    }
     if (c.review) {
       const noteId = seedUuid(`note:${i}`);
       await db.clinicalNote.upsert({
@@ -113,7 +131,6 @@ async function main() {
       });
     }
   }
-  // Images are seeded in Sprint 2, when encrypted image storage exists.
   console.log(`Seeded ${users.length} users and ${cases.length} synthetic cases.`);
 }
 
