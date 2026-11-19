@@ -18,6 +18,9 @@ RUN npm run build -w @smilesync/api
 # ---- tools: used by the one-off "migrate" service (prisma CLI + tsx for the seed) ----
 FROM build AS tools
 WORKDIR /app/apps/api
+# Same non-root user as the API, so seeded image files are readable by it.
+RUN mkdir -p storage && chown node:node storage
+USER node
 CMD ["npx", "prisma", "migrate", "deploy"]
 
 # ---- prod-deps: drop dev dependencies ----

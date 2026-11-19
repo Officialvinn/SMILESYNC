@@ -64,6 +64,13 @@ export class ImageStore {
     return key;
   }
 
+  /** Writes an image straight into place (synthetic seed data only). */
+  async putStored(imageId: string, bytes: Uint8Array): Promise<string> {
+    const key = ImageStore.finalKey(imageId);
+    await this.writeAtomic(join(this.root, key), this.crypto.encryptBytes(bytes, imageId));
+    return key;
+  }
+
   /** Decrypted bytes of a stored image (dentist download, Sprint 3). */
   async read(key: string, imageId: string): Promise<Buffer> {
     return this.crypto.decryptBytes(await readFile(join(this.root, key)), imageId);

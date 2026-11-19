@@ -66,3 +66,15 @@ describe('FR 1.1 credential rules', () => {
     expect(validateNewSecret('ADMIN', 'long-enough-pass')).toBeNull();
   });
 });
+
+describe('synthetic seed images', () => {
+  it('are valid PNGs, differ per case, and stay small', async () => {
+    const { syntheticOralImage } = await import('../prisma/syntheticImage.js');
+    const a = syntheticOralImage('FRONT', 1);
+    const b = syntheticOralImage('FRONT', 2);
+    expect(a.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    expect(a.readUInt32BE(16)).toBe(640); // IHDR width
+    expect(Buffer.compare(a, b)).not.toBe(0);
+    for (const v of ['FRONT', 'UPPER_ARCH', 'LOWER_ARCH'] as const) expect(syntheticOralImage(v, 0).length).toBeLessThan(200_000);
+  });
+});
