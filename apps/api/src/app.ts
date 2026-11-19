@@ -4,7 +4,10 @@ import type { Config } from './config.js';
 import type { Db } from './db.js';
 import { errorHandler } from './http/errors.js';
 import { authRouter } from './routes/auth.js';
+import { casesRouter } from './routes/cases.js';
 import { plannedRouter } from './routes/planned.js';
+import { FieldCrypto } from './security/fieldCrypto.js';
+import { ImageStore } from './storage/imageStore.js';
 
 export interface AppDeps {
   db: Db;
@@ -25,6 +28,8 @@ export function createApp({ db, config, now = () => new Date() }: AppDeps) {
   });
 
   app.use('/auth', authRouter(db, config, now));
+  const crypto = new FieldCrypto(config.PATIENT_DATA_KEY);
+  app.use(casesRouter({ db, jwtSecret: config.JWT_SECRET, now, crypto, images: new ImageStore(config.IMAGE_STORAGE_DIR, crypto) }));
   app.use(plannedRouter(db, config.JWT_SECRET, now));
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });

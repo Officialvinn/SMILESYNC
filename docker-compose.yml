@@ -53,6 +53,10 @@ services:
       PATIENT_DATA_KEY: ${PATIENT_DATA_KEY:?set in .env}
       BCRYPT_COST: ${BCRYPT_COST:-12}
       TRUST_PROXY_HOPS: 1
+      IMAGE_STORAGE_DIR: /app/apps/api/storage
+    volumes:
+      # Encrypted oral images (NFR 1). Back up together with pgdata.
+      - images:/app/apps/api/storage
     depends_on:
       db:
         condition: service_healthy
@@ -76,5 +80,6 @@ services:
 
 volumes:
   pgdata:
+  images:
   caddy_data:
   caddy_config:

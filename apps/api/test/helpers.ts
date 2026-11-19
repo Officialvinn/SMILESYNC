@@ -1,4 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { inject } from 'vitest';
 import request from 'supertest';
 import { generateAnonId, type Role } from '@smilesync/shared';
@@ -18,6 +21,8 @@ export function testConfig(): Config {
     PATIENT_DATA_KEY: randomBytes(32).toString('base64'),
     BCRYPT_COST: '4',
     TRUST_PROXY_HOPS: '0',
+    // Synthetic test images only; a fresh folder per test file.
+    IMAGE_STORAGE_DIR: mkdtempSync(join(tmpdir(), 'smilesync-images-')),
   });
 }
 

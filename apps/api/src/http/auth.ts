@@ -39,6 +39,10 @@ export interface AuthorizeOptions {
   load?: (req: Request) => Promise<{ id: string; context: ResourceContext } | null>;
   /** Default true. Only auth:refresh skips the audit log. */
   audit?: boolean;
+  /** Name written to the audit log when it should differ from the permission checked. */
+  auditAction?: string;
+  /** Resource id for the audit log when it is not a URL parameter (e.g. a new case in the body). */
+  resourceIdFrom?: (req: Request) => string | undefined;
 }
 
 /**
@@ -52,7 +56,14 @@ export function authorize(db: Db, action: Action, opts: AuthorizeOptions): Reque
     const audit = (outcome: 'ALLOWED' | 'DENIED' | 'NOT_FOUND', resourceId?: string) =>
       opts.audit === false
         ? Promise.resolve()
-        : recordAudit(db, { userId: actor.id, action, outcome, resourceType: opts.resourceType, resourceId, ipAddress: req.ip });
+        : recordAudit(db, {
+            userId: actor.id,
+            action: opts.auditAction ?? action,
+            outcome,
+            resourceType: opts.resourceType,
+            resourceId: resourceId ?? opts.resourceIdFrom?.(req),
+            ipAddress: req.ip,
+          });
 
     // Roles that may never do this get 403 without learning whether the resource exists.
     if (!roleMayEver(actor.role, action)) {
