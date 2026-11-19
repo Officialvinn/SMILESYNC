@@ -5,3 +5,4 @@ export * from './access/permissions.js';
 export * from './sync/types.js';
 export * from './sync/engine.js';
 export * from './sync/memoryStore.js';
+export * from './sync/httpTransport.js';
