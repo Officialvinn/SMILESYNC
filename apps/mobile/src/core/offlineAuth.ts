@@ -118,6 +118,12 @@ export class AuthService {
     return { ok: true, session: { user: res.user, token: res.token, expiresAt: res.expiresAt, offline: false } };
   }
 
+  /** The last token from the server, for sync requests. */
+  async getToken(): Promise<StoredToken | null> {
+    const raw = await this.deps.kv.get(KEY.token);
+    return raw ? (JSON.parse(raw) as StoredToken) : null;
+  }
+
   /** Called after a token refresh on sync (FR 1.1, "token refreshes on sync"). */
   async saveToken(t: StoredToken): Promise<void> {
     await this.deps.kv.set(KEY.token, JSON.stringify(t));
