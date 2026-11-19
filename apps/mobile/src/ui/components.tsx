@@ -3,24 +3,53 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, size } from './theme';
 
-export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
+/**
+ * A screen: content, then its actions straight after it (NFR 3: the next step
+ * is where the eye ends, with no empty gap between the question and the answer).
+ */
+export function Screen({ children, footer, scroll = true }: { children: ReactNode; footer?: ReactNode; scroll?: boolean }) {
+  const body = (
+    <>
+      {children}
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
+    </>
+  );
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {scroll ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {children}
+          {body}
         </ScrollView>
       ) : (
-        <View style={[styles.content, { flex: 1 }]}>{children}</View>
+        <View style={[styles.content, { flex: 1 }]}>{body}</View>
       )}
     </SafeAreaView>
   );
 }
 
-/** NFR 3: "Step 2 of 4" so the CHW always knows how far along they are. */
+/** Footer content: an optional hint above one or two buttons side by side. */
+export function Actions({ hint, children }: { hint?: string | null; children: ReactNode }) {
+  return (
+    <View style={styles.actions}>
+      {hint ? (
+        <Text style={styles.hint} accessibilityLiveRegion="polite">
+          {hint}
+        </Text>
+      ) : null}
+      <View style={styles.actionRow}>{children}</View>
+    </View>
+  );
+}
+
+/** NFR 3: "Step 2 of 4" plus a progress bar, so the CHW always knows how far along they are. */
 export function StepHeader({ step, total, title }: { step: number; total: number; title: string }) {
   return (
     <View style={styles.stepHeader} accessibilityRole="header">
+      <View style={styles.progress} accessibilityLabel={`Step ${step} of ${total}`}>
+        {Array.from({ length: total }, (_, i) => (
+          <View key={i} style={[styles.progressSeg, i < step && styles.progressOn]} />
+        ))}
+      </View>
       <Text style={styles.stepCount}>
         Step {step} of {total}
       </Text>
@@ -50,8 +79,10 @@ export function BigButton(props: {
   disabled?: boolean;
   busy?: boolean;
   hint?: string;
+  /** Share the row with another button. */
+  flex?: number;
 }) {
-  const { label, onPress, kind = 'primary', disabled, busy, hint } = props;
+  const { label, onPress, kind = 'primary', disabled, busy, hint, flex } = props;
   const off = disabled || busy;
   return (
     <Pressable
@@ -61,15 +92,36 @@ export function BigButton(props: {
       accessibilityLabel={label}
       accessibilityHint={hint}
       accessibilityState={{ disabled: !!off, busy: !!busy }}
-      style={({ pressed }) => [styles.button, buttonStyle[kind], off && styles.buttonOff, pressed && { opacity: 0.8 }]}
+      style={({ pressed }) => [
+        styles.button,
+        buttonStyle[kind],
+        disabled && !busy && styles.buttonOff,
+        flex !== undefined && { flex },
+        pressed && { opacity: 0.85 },
+      ]}
     >
       {busy ? (
         <ActivityIndicator color={kind === 'primary' ? colors.primaryText : colors.primary} />
       ) : (
-        <Text style={[styles.buttonText, kind !== 'primary' && { color: kind === 'danger' ? colors.danger : colors.primary }]}>
+        <Text
+          style={[
+            styles.buttonText,
+            kind !== 'primary' && { color: kind === 'danger' ? colors.danger : colors.primary },
+            disabled && styles.buttonTextOff,
+          ]}
+        >
           {label}
         </Text>
       )}
+    </Pressable>
+  );
+}
+
+/** A small, clearly secondary action (log out, cancel, delete). Still at least 44 dp tall. */
+export function TextButton({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={styles.textButton} hitSlop={8}>
+      <Text style={[styles.textButtonText, danger && { color: colors.danger }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -94,7 +146,7 @@ export function Banner({ kind, children }: { kind: 'warn' | 'error' | 'ok'; chil
   const bg = kind === 'warn' ? colors.warnBg : kind === 'error' ? colors.errorBg : colors.okBg;
   return (
     <View style={[styles.banner, { backgroundColor: bg }]} accessibilityLiveRegion="polite">
-      <Text style={[styles.body, kind === 'warn' && { color: colors.warnText }]}>{children}</Text>
+      <Text style={[styles.bannerText, kind === 'warn' && { color: colors.warnText }]}>{children}</Text>
     </View>
   );
 }
@@ -133,22 +185,33 @@ export function Choices<T extends string>(props: {
 
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: size.gutter, gap: 14 },
-  stepHeader: { gap: 4, marginBottom: 4 },
+  content: { paddingHorizontal: size.gutter, paddingTop: 12, paddingBottom: 20, gap: 12 },
+  footer: { marginTop: 4 },
+  actions: { gap: 6 },
+  actionRow: { flexDirection: 'row', gap: 10 },
+  hint: { fontSize: size.small, color: colors.muted, textAlign: 'center' },
+  stepHeader: { gap: 4 },
+  progress: { flexDirection: 'row', gap: 4, marginBottom: 4 },
+  progressSeg: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.border },
+  progressOn: { backgroundColor: colors.primary },
   stepCount: { fontSize: size.small, color: colors.muted, fontWeight: '600' },
   title: { fontSize: size.title, fontWeight: '700', color: colors.text },
-  body: { fontSize: size.text, lineHeight: 26, color: colors.text },
+  body: { fontSize: size.text, lineHeight: 24, color: colors.text },
   button: {
+    flex: 1,
     minHeight: size.touch,
     borderRadius: size.radius,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderWidth: 2,
   },
-  buttonOff: { opacity: 0.45 },
-  buttonText: { fontSize: size.text, fontWeight: '700', color: colors.primaryText },
-  field: { gap: 6 },
+  buttonOff: { backgroundColor: colors.border, borderColor: colors.border },
+  buttonText: { fontSize: size.text, fontWeight: '700', color: colors.primaryText, textAlign: 'center' },
+  buttonTextOff: { color: colors.muted },
+  textButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
+  textButtonText: { fontSize: size.text, fontWeight: '600', color: colors.primary, textDecorationLine: 'underline' },
+  field: { gap: 4 },
   label: { fontSize: size.text, fontWeight: '600', color: colors.text },
   input: {
     minHeight: size.touch,
@@ -156,17 +219,18 @@ export const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: size.radius,
     paddingHorizontal: 14,
-    fontSize: size.text + 2,
+    fontSize: size.text + 1,
     backgroundColor: colors.surface,
     color: colors.text,
   },
   error: { fontSize: size.small, color: colors.danger, fontWeight: '600' },
-  banner: { padding: 14, borderRadius: size.radius },
-  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  banner: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: size.radius },
+  bannerText: { fontSize: size.small + 1, lineHeight: 21, color: colors.text },
+  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: {
     minHeight: size.touch - 8,
-    minWidth: 96,
-    paddingHorizontal: 16,
+    minWidth: 88,
+    paddingHorizontal: 14,
     borderRadius: size.radius,
     borderWidth: 2,
     borderColor: colors.primary,

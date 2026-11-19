@@ -10,7 +10,7 @@ import type { ViewType } from '@smilesync/shared';
 import { GENERAL_TIPS, VIEW_GUIDANCE, captureProgress } from '../core/capturePlan';
 import type { CaseRepo, ImageMeta } from '../core/caseRepo';
 import { discardPhoto, processPhoto, type CameraPhoto } from '../platform/photos';
-import { Banner, BigButton, Body, Screen, StepHeader } from '../ui/components';
+import { Actions, Banner, BigButton, Body, Screen, StepHeader, TextButton } from '../ui/components';
 import { Thumbnail } from '../ui/Thumbnail';
 import { colors, size } from '../ui/theme';
 import { TOTAL_STEPS } from './ConsentScreen';
@@ -118,7 +118,20 @@ export function CaptureScreen(props: { caseId: string; repo: CaseRepo; onDone: (
   const extras = images.filter((i) => i.viewType === 'EXTRA');
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <View style={{ gap: 4 }}>
+          <Actions hint={progress.canFinish ? null : `Take the ${progress.total - progress.done} missing ${progress.total - progress.done === 1 ? 'photo' : 'photos'} first`}>
+            {progress.canFinish ? (
+              <BigButton label="Next: symptoms" onPress={onDone} />
+            ) : (
+              <BigButton label="Take next photo" onPress={() => setMode({ kind: 'camera', view: progress.next! })} />
+            )}
+          </Actions>
+          <TextButton label="Finish later (saved on this phone)" onPress={onExit} />
+            </View>
+      }
+    >
       <StepHeader step={3} total={TOTAL_STEPS} title={`Photos: ${progress.done} of ${progress.total} done`} />
       {error ? <Banner kind="error">{error}</Banner> : null}
       {REQUIRED.map((view) => {
@@ -126,9 +139,10 @@ export function CaptureScreen(props: { caseId: string; repo: CaseRepo; onDone: (
         return (
           <View key={view} style={s.viewRow}>
             {img ? <Thumbnail repo={repo} imageId={img.id} /> : <View style={s.missing}><Text style={s.missingText}>Not taken</Text></View>}
-            <View style={{ flex: 1, gap: 8 }}>
+            <View style={{ flex: 1, gap: 2 }}>
               <Text style={s.viewTitle}>{VIEW_GUIDANCE[view].title}</Text>
-              <BigButton label={img ? 'Retake' : 'Take photo'} kind={img ? 'secondary' : 'primary'} onPress={() => setMode({ kind: 'camera', view })} />
+              {img ? <Text style={s.taken}>✓ Taken</Text> : null}
+              <TextButton label={img ? 'Retake' : 'Take photo'} onPress={() => setMode({ kind: 'camera', view })} />
             </View>
           </View>
         );
@@ -136,21 +150,15 @@ export function CaptureScreen(props: { caseId: string; repo: CaseRepo; onDone: (
       {extras.map((img, i) => (
         <View key={img.id} style={s.viewRow}>
           <Thumbnail repo={repo} imageId={img.id} />
-          <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ flex: 1, gap: 2 }}>
             <Text style={s.viewTitle}>Extra photo {i + 1}</Text>
-            <BigButton
-              label="Remove"
-              kind="danger"
-              onPress={() => void repo.deleteImage(caseId, img.id).then(reload).catch((e: Error) => setError(e.message))}
-            />
+            <TextButton label="Remove" danger onPress={() => void repo.deleteImage(caseId, img.id).then(reload).catch((e: Error) => setError(e.message))} />
           </View>
         </View>
       ))}
       {progress.canFinish && progress.canAddExtra ? (
-        <BigButton label="Add extra photo (optional)" kind="secondary" onPress={() => setMode({ kind: 'camera', view: 'EXTRA' })} />
+        <TextButton label="+ Add an extra photo (optional)" onPress={() => setMode({ kind: 'camera', view: 'EXTRA' })} />
       ) : null}
-      <BigButton label="Continue" onPress={onDone} disabled={!progress.canFinish} hint="Needs all 3 photos" />
-      <BigButton label="Save and go home" kind="secondary" onPress={onExit} hint="You can finish this case later" />
     </Screen>
   );
 }
@@ -252,8 +260,9 @@ const s = StyleSheet.create({
   sideText: { color: '#fff', fontSize: size.text, fontWeight: '600' },
   shutter: { width: 88, height: 88, borderRadius: 44, borderWidth: 5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: '#fff' },
-  viewRow: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: colors.surface, borderRadius: size.radius, padding: 10 },
+  viewRow: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: colors.surface, borderRadius: size.radius, padding: 8 },
   viewTitle: { fontSize: size.text, fontWeight: '700', color: colors.text },
+  taken: { fontSize: size.small, fontWeight: '700', color: colors.primary },
   missing: { width: 84, height: 84, borderRadius: size.radius, backgroundColor: colors.bg, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   missingText: { fontSize: size.small - 2, color: colors.muted },
 });
