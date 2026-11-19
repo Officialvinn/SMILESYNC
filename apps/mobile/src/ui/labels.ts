@@ -23,7 +23,7 @@ export const PRIORITY_COLOR: Record<Priority, string> = {
 /** FR 5.3: one plain status line per case. */
 export function statusLine(c: Pick<CaseListItem, 'isDraft' | 'status' | 'canFinish' | 'hasAssessment' | 'imageCount' | 'needsAttention' | 'priority'>): string {
   if (c.isDraft) {
-    if (!c.canFinish) return `In progress: ${c.imageCount} photos`;
+    if (!c.canFinish) return `In progress: ${Math.min(c.imageCount, 3)} of 3 photos`;
     return c.hasAssessment ? 'Ready to save' : 'Photos done, symptoms next';
   }
   if (c.status === 'PENDING') return c.needsAttention ? 'Needs attention: not sent' : 'Saved, waiting to send';
