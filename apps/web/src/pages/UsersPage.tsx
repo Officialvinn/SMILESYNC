@@ -10,6 +10,7 @@ const ROLE_LABEL: Record<Role, string> = { CHW: 'Community health worker', DENTI
 export function UsersPage({ me }: { me: string }) {
   const [users, setUsers] = useState<UserSummary[] | null>(null);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const load = () =>
     api
@@ -41,13 +42,25 @@ export function UsersPage({ me }: { me: string }) {
     <section aria-labelledby="users-title">
       <div className="page-head">
         <h1 id="users-title">Users</h1>
+        <p className="muted">{users ? `${users.length} accounts` : ''}</p>
+        <span className="spacer" />
+        {!adding ? (
+          <button type="button" className="primary-action" onClick={() => setAdding(true)}>
+            + Add user
+          </button>
+        ) : null}
       </div>
       {message ? (
         <p className={`banner ${message.kind}`} role={message.kind === 'error' ? 'alert' : 'status'}>
           {message.text}
         </p>
       ) : null}
-      <CreateUser onCreated={(u) => (setMessage({ kind: 'ok', text: `Created ${u.username}.` }), void load())} />
+      {adding ? (
+        <CreateUser
+          onCancel={() => setAdding(false)}
+          onCreated={(u) => (setMessage({ kind: 'ok', text: `Created ${u.username}.` }), setAdding(false), void load())}
+        />
+      ) : null}
       <table>
         <thead>
           <tr>
@@ -104,7 +117,7 @@ export function UsersPage({ me }: { me: string }) {
   );
 }
 
-function CreateUser({ onCreated }: { onCreated: (u: UserSummary) => void }) {
+function CreateUser({ onCreated, onCancel }: { onCreated: (u: UserSummary) => void; onCancel: () => void }) {
   const empty = { username: '', role: 'CHW' as Role, secret: '', chwCode: '', assignedSite: '', licenseNumber: '', specialty: '', adminLevel: '' };
   const [f, setF] = useState(empty);
   const [error, setError] = useState<string | null>(null);
@@ -130,8 +143,8 @@ function CreateUser({ onCreated }: { onCreated: (u: UserSummary) => void }) {
   }
 
   return (
-    <details className="card create-user">
-      <summary>Add a user</summary>
+    <section className="card create-user" aria-labelledby="add-user-title">
+      <h2 id="add-user-title">Add a user</h2>
       <form onSubmit={submit}>
         {error ? <p className="banner error" role="alert">{error}</p> : null}
         <div className="form-row">
@@ -186,10 +199,15 @@ function CreateUser({ onCreated }: { onCreated: (u: UserSummary) => void }) {
             </label>
           ) : null}
         </div>
-        <button type="submit" disabled={busy}>
-          {busy ? 'Creating…' : 'Create user'}
-        </button>
+        <div className="form-actions">
+          <button type="submit" className="primary-action" disabled={busy}>
+            {busy ? 'Creating…' : 'Create user'}
+          </button>
+          <button type="button" className="secondary" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
       </form>
-    </details>
+    </section>
   );
 }

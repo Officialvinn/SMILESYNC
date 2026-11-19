@@ -93,7 +93,7 @@ test('dentist triages a case from the queue; the CHW gets the result; admin sees
   await expect(page.getByText('Synthetic note: deep decay on upper molar.')).toBeVisible();
 
   // It left the waiting queue and shows under Reviewed.
-  await page.getByRole('link', { name: '← Back to queue' }).click();
+  await page.getByRole('link', { name: '← Queue' }).click();
   await expect(page.getByRole('row', { name: new RegExp(anonId) })).toHaveCount(0);
   await page.getByLabel('Status').selectOption('REVIEWED');
   await expect(page.getByRole('row', { name: new RegExp(anonId) })).toContainText('Urgent');
