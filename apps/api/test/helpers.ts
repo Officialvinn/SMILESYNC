@@ -91,3 +91,66 @@ export async function createCase(db: Db, chwId: string) {
 export async function auditFor(db: Db, userId: string | null, action?: string) {
   return db.auditLog.findMany({ where: { userId, ...(action ? { action } : {}) }, orderBy: { timestamp: 'asc' } });
 }
+
+// ---- Sprint 3: full synthetic cases through the real upload endpoints --------
+
+import { createHash } from 'node:crypto';
+import { SHA256_HEADER, type CaseSubmission, type County, type Sex, type SymptomDuration } from '@smilesync/shared';
+
+export const sha256Hex = (b: Uint8Array) => createHash('sha256').update(b).digest('hex');
+
+/** Synthetic image bytes with a JPEG start marker. Different per call. */
+export function fakeJpeg(size = 20_000): Uint8Array {
+  const b = new Uint8Array(size);
+  b[0] = 0xff;
+  b[1] = 0xd8;
+  const seed = Math.floor(Math.random() * 255);
+  for (let i = 2; i < size; i++) b[i] = (i * 31 + seed) & 0xff;
+  return b;
+}
+
+export interface SyntheticCaseOptions {
+  painLevel?: number;
+  duration?: SymptomDuration;
+  location?: County;
+  sex?: Sex;
+  age?: number;
+  name?: string;
+}
+
+/** Uploads a case as a CHW (photos, then case JSON). Returns ids and the photo bytes. */
+export async function submitSyntheticCase(h: ReturnType<typeof makeHarness>, chwToken: string, o: SyntheticCaseOptions = {}) {
+  const at = h.clock.now().toISOString();
+  const images = (['FRONT', 'UPPER_ARCH', 'LOWER_ARCH'] as const).map((viewType) => {
+    const bytes = fakeJpeg();
+    return { id: randomUUID(), viewType, bytes };
+  });
+  const submission: CaseSubmission = {
+    id: randomUUID(),
+    createdAt: at,
+    patient: {
+      id: randomUUID(),
+      anonId: generateAnonId(),
+      name: o.name ?? 'Synthetic Patient Njeri',
+      age: o.age ?? 30,
+      location: o.location ?? 'Narok',
+      ...(o.sex ? { sex: o.sex } : {}),
+      consentGiven: true,
+      consentDate: at,
+    },
+    images: images.map((i) => ({ id: i.id, viewType: i.viewType, sizeKB: Math.ceil(i.bytes.length / 1024), capturedAt: at, sha256: sha256Hex(i.bytes) })),
+    assessment: { id: randomUUID(), painLevel: o.painLevel ?? 5, duration: o.duration ?? 'DAYS_1_TO_7' },
+  };
+  for (const img of images) {
+    const r = await h.http()
+      .put(`/cases/${submission.id}/images/${img.id}`)
+      .set('Authorization', `Bearer ${chwToken}`)
+      .set('Content-Type', 'application/octet-stream')
+      .set(SHA256_HEADER, sha256Hex(img.bytes))
+      .send(Buffer.from(img.bytes));
+    if (r.status !== 201) throw new Error(`image upload ${r.status}`);
+  }
+  const res = await h.http().post('/cases').set('Authorization', `Bearer ${chwToken}`).send(submission);
+  if (res.status !== 201) throw new Error(`case upload ${res.status} ${JSON.stringify(res.body)}`);
+  return { caseId: submission.id, submission, images };
+}
