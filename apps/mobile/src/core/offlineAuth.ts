@@ -101,9 +101,13 @@ export class AuthService {
         return this.loginOffline(username, pin);
       }
       if (e instanceof ApiError) {
-        // The server refused this user: stop offline logins for them on this phone.
-        const cred = await this.readCredential();
-        if (cred && cred.user.username === username) await this.forget();
+        // 401: the server refused this user (wrong PIN, deactivated, reset), so stop
+        // offline logins for them on this phone. Other refusals, such as 429 for too
+        // many attempts from this network, say nothing about the account: keep it.
+        if (e.status === 401) {
+          const cred = await this.readCredential();
+          if (cred && cred.user.username === username) await this.forget();
+        }
         return { ok: false, message: e.message };
       }
       throw e;

@@ -8,7 +8,8 @@
 import { randomUUID } from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { BackHandler } from 'react-native';
+import { AppState, BackHandler } from 'react-native';
+import { AppLock } from './core/appLock';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CaseRepo } from './core/caseRepo';
 import { AuthService, bcryptPinHasher, type Session } from './core/offlineAuth';
@@ -54,6 +55,16 @@ export default function App() {
       })
       .catch((e: unknown) => setFatal(e instanceof Error ? e.message : String(e)));
   }, []);
+
+  // Lock after a few minutes in the background (NFR 1, NFR 6).
+  const lock = useMemo(() => new AppLock(), []);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'background') lock.wentToBackground(Date.now());
+      if (state === 'active' && lock.cameToForeground(Date.now())) setSession(null);
+    });
+    return () => sub.remove();
+  }, [lock]);
 
   // FR 5.1: automatic sync while a CHW is logged in.
   const sync = useSync(db, auth, session?.user.id ?? null);
