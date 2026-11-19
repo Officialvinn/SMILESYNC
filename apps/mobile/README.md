@@ -56,7 +56,10 @@ docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.
 ```
 
 - **iOS simulator:** `xcrun simctl keychain booted add-root-cert caddy-root.crt`
-- **Android emulator or phone:** install it under Settings > Security > Encryption &
+- **Android, simplest:** build with the certificate baked into the debug build only:
+  `SMILESYNC_DEV_CA_CERT=$PWD/caddy-root.crt npx expo prebuild --platform android --clean`,
+  then run `adb reverse tcp:443 tcp:443`. Release builds never include it.
+- **Android emulator or phone, manual:** install it under Settings > Security > Encryption &
   credentials > Install a certificate, then run `adb reverse tcp:443 tcp:443` so
   `https://localhost/api` on the device reaches your Mac. Only debug builds trust
   user certificates (`plugins/withNetworkSecurity.js`); release builds do not.
