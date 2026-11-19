@@ -9,9 +9,9 @@ import type { Db } from '../db.js';
 import { authorize, requireAuth } from '../http/auth.js';
 import { HttpError, notImplemented } from '../http/errors.js';
 
-export function plannedRouter(db: Db, jwtSecret: string): Router {
+export function plannedRouter(db: Db, jwtSecret: string, now: () => Date): Router {
   const router = Router();
-  const auth = requireAuth(db, jwtSecret);
+  const auth = requireAuth(db, jwtSecret, now);
 
   const loadCase = async (req: Request) => {
     const id = req.params.id;
