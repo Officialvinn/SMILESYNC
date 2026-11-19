@@ -194,6 +194,9 @@ export class SyncEngine {
   }
 }
 
+/** What AutoSync drives: the engine, or a wrapper that refreshes the login token first. */
+export type SyncRunner = Pick<SyncEngine, 'runOnce' | 'nextDueAt' | 'awaitingResults'>;
+
 export interface AutoSyncOptions {
   /** How often to check for dentist results while cases are waiting (FR 7.3). */
   pollIntervalMs?: number;
@@ -213,7 +216,7 @@ export class AutoSync {
   private readonly pollIntervalMs: number;
 
   constructor(
-    private readonly engine: SyncEngine,
+    private readonly engine: SyncRunner,
     private readonly opts: AutoSyncOptions = {},
   ) {
     this.pollIntervalMs = opts.pollIntervalMs ?? 15 * 60_000;
