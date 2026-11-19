@@ -56,74 +56,80 @@ export function CasePage({ id }: { id: string }) {
 
   return (
     <article className="case" aria-labelledby="case-title">
-      <p>
-        <a href={href({ page: 'queue' })}>← Back to queue</a>
-      </p>
       <div className="page-head">
+        <a href={href({ page: 'queue' })} className="back">
+          ← Queue
+        </a>
         <h1 id="case-title">Case {c.anonId}</h1>
         {c.priority ? <span className={`badge ${c.priority.toLowerCase()}`}>{PRIORITY[c.priority]}</span> : <span className="badge waiting">Waiting for review</span>}
       </div>
       {error ? <p className="banner error">{error}</p> : null}
 
-      <div className="case-grid">
-        <section aria-label="Patient and symptoms" className="card facts">
-          <dl>
-            <dt>Age</dt>
-            <dd>{c.age} years</dd>
-            <dt>Sex</dt>
-            <dd>{c.sex ? c.sex.toLowerCase().replace('_', ' ') : 'Not recorded'}</dd>
-            <dt>County</dt>
-            <dd>{c.location}</dd>
-            <dt>Pain</dt>
-            <dd>
-              <span className={`pain ${painClass(c.painLevel)}`}>{c.painLevel ?? '-'}</span> / 10
-            </dd>
-            <dt>Duration</dt>
-            <dd>{c.duration ? DURATION[c.duration] : '-'}</dd>
-            <dt>Consent</dt>
-            <dd>{dateTime(c.consentDate)}</dd>
-            <dt>Captured</dt>
-            <dd>{dateTime(c.createdAt)}</dd>
-            <dt>Received</dt>
-            <dd>{dateTime(c.syncedAt)}</dd>
-            <dt>CHW</dt>
-            <dd>{c.submittedBy}</dd>
-          </dl>
-          <p className="muted small">The patient's name is kept by the CHW and is not shown here.</p>
-        </section>
+      <ul className="facts-strip" aria-label="Patient and symptoms">
+        <li>
+          <span>Age</span> {c.age}
+        </li>
+        <li>
+          <span>Sex</span> {c.sex ? c.sex.toLowerCase().replace('_', ' ') : 'not recorded'}
+        </li>
+        <li>
+          <span>County</span> {c.location}
+        </li>
+        <li>
+          <span>Pain</span> <b className={`pain ${painClass(c.painLevel)}`}>{c.painLevel ?? '-'}</b>/10
+        </li>
+        <li>
+          <span>Duration</span> {c.duration ? DURATION[c.duration] : '-'}
+        </li>
+        <li>
+          <span>Captured</span> {dateTime(c.createdAt)}
+        </li>
+        <li>
+          <span>CHW</span> {c.submittedBy}
+        </li>
+        <li>
+          <span>Consent</span> {dateTime(c.consentDate)}
+        </li>
+      </ul>
 
-        <section aria-labelledby="photos-title" className="photos">
-          <h2 id="photos-title">Photos</h2>
-          <div className="thumbs">
+      <div className="case-grid">
+        <section aria-label="Photos" className="photos">
+          <div className="photo-grid">
             {c.images.map((img, i) => (
-              <button type="button" key={img.id} className="thumb" onClick={() => setViewing(i)} disabled={!photos[i]} aria-label={`Open ${VIEW[img.viewType]} photo`}>
+              <button type="button" key={img.id} className="photo" onClick={() => setViewing(i)} disabled={!photos[i]} aria-label={`Open ${VIEW[img.viewType]} photo full screen`}>
                 {photos[i] ? <img src={photos[i]!.url} alt="" /> : <span className="muted">Loading…</span>}
-                <span>{VIEW[img.viewType]}</span>
+                <span className="photo-label">{VIEW[img.viewType]} · click to zoom</span>
               </button>
             ))}
           </div>
+          <p className="muted small">The patient's name stays with the CHW and is not shown here.</p>
         </section>
-      </div>
 
-      <section aria-labelledby="notes-title" className="card">
-        <h2 id="notes-title">Triage</h2>
-        {c.notes.length > 0 ? (
-          <ol className="notes">
-            {c.notes.map((n) => (
-              <li key={n.id}>
-                <p>{n.noteText}</p>
-                {n.referralAdvice ? <p><strong>Referral:</strong> {n.referralAdvice}</p> : null}
-                <p className="muted small">
-                  {n.author}, {dateTime(n.createdAt)}
-                </p>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="muted">No notes yet.</p>
-        )}
-        <TriageForm caseDetail={c} onSaved={() => void load()} />
-      </section>
+        <aside className="triage-panel card" aria-labelledby="triage-title">
+          <h2 id="triage-title">{c.status === 'REVIEWED' ? 'Update triage' : 'Your triage'}</h2>
+          <TriageForm caseDetail={c} onSaved={() => void load()} />
+          {c.notes.length > 0 ? (
+            <div className="history">
+              <h3>Earlier notes</h3>
+              <ol className="notes">
+                {c.notes.map((n) => (
+                  <li key={n.id}>
+                    <p>{n.noteText}</p>
+                    {n.referralAdvice ? (
+                      <p>
+                        <strong>Referral:</strong> {n.referralAdvice}
+                      </p>
+                    ) : null}
+                    <p className="muted small">
+                      {n.author}, {dateTime(n.createdAt)}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </aside>
+      </div>
 
       {viewing !== null && photos.length === c.images.length ? <ImageViewer images={photos} start={viewing} onClose={() => setViewing(null)} /> : null}
     </article>
@@ -141,7 +147,10 @@ function TriageForm({ caseDetail, onSaved }: { caseDetail: CaseDetail; onSaved: 
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!priority) return;
+    if (!priority) {
+      setMessage({ kind: 'error', text: 'Choose a priority first.' });
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -166,7 +175,7 @@ function TriageForm({ caseDetail, onSaved }: { caseDetail: CaseDetail; onSaved: 
   return (
     <form onSubmit={submit} className="triage" aria-label="Assign priority and add notes">
       <fieldset>
-        <legend>Priority</legend>
+        <legend>1. Priority</legend>
         <div className="priority-options">
           {PRIORITIES.map((p) => (
             <label key={p} className={`priority-option ${p.toLowerCase()} ${priority === p ? 'selected' : ''}`}>
@@ -178,11 +187,11 @@ function TriageForm({ caseDetail, onSaved }: { caseDetail: CaseDetail; onSaved: 
         </div>
       </fieldset>
       <label>
-        Clinical notes for the CHW
-        <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} rows={4} maxLength={5000} placeholder="What you see and what the patient should do" />
+        2. Clinical notes for the CHW
+        <textarea value={noteText} onChange={(e) => setNoteText(e.target.value)} rows={3} maxLength={5000} placeholder="What you see and what the patient should do" />
       </label>
       <label>
-        Referral advice (optional)
+        3. Referral advice (optional)
         <textarea value={referral} onChange={(e) => setReferral(e.target.value)} rows={2} maxLength={2000} placeholder="Where to go and how soon" />
       </label>
       {message ? (
@@ -190,7 +199,7 @@ function TriageForm({ caseDetail, onSaved }: { caseDetail: CaseDetail; onSaved: 
           {message.text}
         </p>
       ) : null}
-      <button type="submit" disabled={busy || !priority}>
+      <button type="submit" className="primary-action" disabled={busy}>
         {busy ? 'Saving…' : caseDetail.status === 'REVIEWED' ? 'Update triage' : 'Save triage'}
       </button>
     </form>

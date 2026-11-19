@@ -134,7 +134,7 @@ function Login({ notice, onLogin }: { notice: string | null; onLogin: (s: LoginR
           Password
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </label>
-        <button type="submit" disabled={busy || !username || !password}>
+        <button type="submit" disabled={busy}>
           {busy ? 'Logging in…' : 'Log in'}
         </button>
       </form>

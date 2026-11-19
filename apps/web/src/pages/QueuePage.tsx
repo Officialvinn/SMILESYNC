@@ -8,7 +8,7 @@ import { KENYA_COUNTIES, PRIORITIES, QUEUE_SORTS, type QueueResponse, type Queue
 import { ApiError, api } from '../api';
 import { DURATION, PRIORITY, SEX, painClass, relativeAge } from '../lib/format';
 import { toQueryString } from '../lib/query';
-import { href } from '../router';
+import { go, href } from '../router';
 
 const SORT_LABEL: Record<QueueSort, string> = {
   pain: 'Highest pain first',
@@ -66,6 +66,12 @@ export function QueuePage() {
         <p className="muted" aria-live="polite">
           {loading ? 'Loading…' : data ? `${data.total} ${data.total === 1 ? 'case' : 'cases'}` : ''}
         </p>
+        <span className="spacer" />
+        {data?.items[0] ? (
+          <button type="button" className="primary-action" onClick={() => go({ page: 'case', id: data.items[0]!.id })}>
+            {filters.status === 'SYNCED' ? `Review next case: ${data.items[0].anonId}` : `Open ${data.items[0].anonId}`} →
+          </button>
+        ) : null}
       </div>
 
       <form className="filters" onSubmit={(e) => e.preventDefault()} aria-label="Filter cases">
@@ -135,11 +141,12 @@ export function QueuePage() {
             <th scope="col">Received</th>
             <th scope="col">Photos</th>
             <th scope="col">Priority</th>
+            <th scope="col"><span className="visually-hidden">Open</span></th>
           </tr>
         </thead>
         <tbody>
           {data?.items.map((c) => (
-            <tr key={c.id}>
+            <tr key={c.id} className="clickable" onClick={() => go({ page: 'case', id: c.id })}>
               <td>
                 <a href={href({ page: 'case', id: c.id })} className="case-link">
                   {c.anonId}
@@ -156,11 +163,16 @@ export function QueuePage() {
               <td title={new Date(c.syncedAt).toLocaleString()}>{relativeAge(c.syncedAt)}</td>
               <td>{c.imageCount}</td>
               <td>{c.priority ? <span className={`badge ${c.priority.toLowerCase()}`}>{PRIORITY[c.priority]}</span> : <span className="muted">Not set</span>}</td>
+              <td className="row-action">
+                <a href={href({ page: 'case', id: c.id })} className="button-link" onClick={(e) => e.stopPropagation()} tabIndex={-1} aria-hidden="true">
+                  {c.status === 'SYNCED' ? 'Review' : 'Open'}
+                </a>
+              </td>
             </tr>
           ))}
           {data && data.items.length === 0 ? (
             <tr>
-              <td colSpan={8} className="empty">
+              <td colSpan={9} className="empty">
                 No cases match these filters.
               </td>
             </tr>
