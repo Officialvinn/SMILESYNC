@@ -27,3 +27,6 @@ caddy-root.crt
 # Dashboard build output and Playwright artefacts
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Backups contain patient data (see scripts/backup.sh)
+backups/
