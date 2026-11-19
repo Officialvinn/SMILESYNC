@@ -15,8 +15,8 @@
     "prisma": "prisma"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "7.10.0",
-    "@prisma/client": "7.10.0",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
     "@smilesync/shared": "0.1.0",
     "bcryptjs": "3.0.3",
     "express": "5.3.0",
@@ -30,7 +30,7 @@
     "@types/jsonwebtoken": "9.0.10",
     "@types/pg": "8.23.1",
     "@types/supertest": "7.2.1",
-    "prisma": "7.10.0",
+    "prisma": "7.10.1",
     "supertest": "7.3.1",
     "tsx": "4.23.15"
   }
