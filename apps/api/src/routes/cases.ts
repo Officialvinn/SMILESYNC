@@ -26,6 +26,18 @@ function param(req: Request, name: string): string {
   return v;
 }
 
+/** FR 7.3: the result the CHW app pulls (also returned after a dentist's triage). */
+export async function triageResult(db: Db, caseId: string): Promise<TriageResult> {
+  const c = await db.case.findUniqueOrThrow({ where: { id: caseId }, include: { notes: { orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] } } });
+  return {
+    caseId: c.id,
+    status: c.status === 'REVIEWED' ? 'REVIEWED' : 'SYNCED',
+    priority: c.priority,
+    reviewedAt: c.reviewedAt?.toISOString() ?? null,
+    notes: c.notes.map((n) => ({ id: n.id, noteText: n.noteText, referralAdvice: n.referralAdvice, createdAt: n.createdAt.toISOString() })),
+  };
+}
+
 export function casesRouter(deps: { db: Db; jwtSecret: string; now: () => Date; crypto: FieldCrypto; images: ImageStore }): Router {
   const { db, now, crypto, images } = deps;
   const router = Router();
@@ -143,18 +155,7 @@ export function casesRouter(deps: { db: Db; jwtSecret: string; now: () => Date; 
 
   /** FR 7.3: pulled by the CHW app on each sync. Only the submitting CHW may read it. */
   router.get('/cases/:id/triage', auth, authorize(db, 'case:readTriage', { resourceType: 'case', load: loadCase }), async (req, res) => {
-    const c = await db.case.findUniqueOrThrow({
-      where: { id: req.params.id as string },
-      include: { notes: { orderBy: { createdAt: 'asc' } } },
-    });
-    const body: TriageResult = {
-      caseId: c.id,
-      status: c.status === 'REVIEWED' ? 'REVIEWED' : 'SYNCED',
-      priority: c.priority,
-      reviewedAt: c.reviewedAt?.toISOString() ?? null,
-      notes: c.notes.map((n) => ({ id: n.id, noteText: n.noteText, referralAdvice: n.referralAdvice, createdAt: n.createdAt.toISOString() })),
-    };
-    res.json(body);
+    res.json(await triageResult(db, req.params.id as string));
   });
 
   return router;

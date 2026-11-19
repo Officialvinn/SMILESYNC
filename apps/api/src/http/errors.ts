@@ -1,4 +1,4 @@
-import type { ErrorRequestHandler, RequestHandler } from 'express';
+import type { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
 
 export class HttpError extends Error {
@@ -10,13 +10,6 @@ export class HttpError extends Error {
     super(message);
   }
 }
-
-/** Placeholder for endpoints from the sequence diagram that later sprints build. */
-export const notImplemented =
-  (sprint: number): RequestHandler =>
-  (_req, res) => {
-    res.status(501).json({ error: `Not implemented yet (planned for Sprint ${sprint})` });
-  };
 
 export const errorHandler =
   (isProduction: boolean): ErrorRequestHandler =>
