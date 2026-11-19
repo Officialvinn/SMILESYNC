@@ -7,7 +7,10 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY apps/api/package.json apps/api/
-RUN npm ci
+# The lockfile covers every workspace, so npm needs the mobile manifest too,
+# but only the API and shared packages are installed (no Expo in the server image).
+COPY apps/mobile/package.json apps/mobile/
+RUN npm ci --workspace @smilesync/shared --workspace @smilesync/api --include-workspace-root
 COPY packages/shared packages/shared
 COPY apps/api apps/api
 RUN npm run build -w @smilesync/api
@@ -19,7 +22,7 @@ CMD ["npx", "prisma", "migrate", "deploy"]
 
 # ---- prod-deps: drop dev dependencies ----
 FROM build AS prod-deps
-RUN npm prune --omit=dev
+RUN npm prune --omit=dev --workspace @smilesync/shared --workspace @smilesync/api --include-workspace-root
 
 # ---- runtime: compiled code and production dependencies only, non-root ----
 FROM node:24.22-alpine AS runtime
@@ -31,6 +34,8 @@ COPY --from=build /app/packages/shared/package.json packages/shared/
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/apps/api/package.json apps/api/
 COPY --from=build /app/apps/api/dist apps/api/dist
+# NFR 1: encrypted image files; docker-compose mounts a volume here.
+RUN mkdir -p /app/apps/api/storage && chown node:node /app/apps/api/storage
 USER node
 WORKDIR /app/apps/api
 EXPOSE 3000

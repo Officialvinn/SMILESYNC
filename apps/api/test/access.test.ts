@@ -1,6 +1,7 @@
 /**
  * FR 1.2 role-based access over HTTP, and FR 8.2 auditing of every attempt.
- * 501 means "allowed, handler arrives in a later sprint"; 403 means denied.
+ * Allowed means the request got past the access check (any status but 401/403,
+ * including 501 for handlers still to come); denied means 403.
  */
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -47,7 +48,8 @@ describe('FR 1.2 role matrix over HTTP', () => {
       const allowed = ep.allowed.includes(role);
       it(`${role} ${allowed ? 'may' : 'may not'} ${ep.method.toUpperCase()} ${ep.path().replace(/[0-9a-f-]{36}/g, ':id')}`, async () => {
         const res = await h.http()[ep.method](ep.path()).set('Authorization', `Bearer ${tokens[role]}`).send({});
-        expect(res.status).toBe(allowed ? 501 : 403);
+        if (allowed) expect([401, 403]).not.toContain(res.status);
+        else expect(res.status).toBe(403);
       });
     }
   }

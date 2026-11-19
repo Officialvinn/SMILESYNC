@@ -5,5 +5,12 @@ apps/api/src/generated
 .env
 *.zip
 docs
-apps/mobile
-apps/web
+# Apps the server image does not need, except their manifests (the lockfile lists them)
+apps/mobile/*
+!apps/mobile/package.json
+apps/web/*
+!apps/web/package.json
+# Local secrets, certificates and image storage
+caddy-root.crt
+/apps/api/storage
+.idea

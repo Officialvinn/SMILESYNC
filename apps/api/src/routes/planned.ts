@@ -20,10 +20,6 @@ export function plannedRouter(db: Db, jwtSecret: string, now: () => Date): Route
     return c ? { id: c.id, context: { submittedById: c.submittedById } } : null;
   };
 
-  // CHW app (Sprint 2)
-  router.post('/cases', auth, authorize(db, 'case:submit', { resourceType: 'case' }), notImplemented(2)); // step 12
-  router.get('/cases/:id/triage', auth, authorize(db, 'case:readTriage', { resourceType: 'case', load: loadCase }), notImplemented(2)); // step 31
-
   // Dentist dashboard (Sprint 3)
   router.get('/cases', auth, authorize(db, 'case:listQueue', { resourceType: 'case' }), notImplemented(3)); // step 21
   router.get('/cases/:id', auth, authorize(db, 'case:read', { resourceType: 'case', load: loadCase }), notImplemented(3)); // step 25

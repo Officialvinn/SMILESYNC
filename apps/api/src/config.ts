@@ -17,6 +17,8 @@ const configSchema = z.object({
     .refine((v) => Buffer.from(v, 'base64').length === 32, 'PATIENT_DATA_KEY must be 32 bytes, base64-encoded'),
   /** bcrypt cost. 12 in production; tests lower it for speed. */
   BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
+  /** Where encrypted image files live (NFR 1). A Docker volume in docker-compose. */
+  IMAGE_STORAGE_DIR: z.string().min(1).default('./storage'),
   /** Number of reverse proxies in front of the API (Caddy = 1), for client IPs in the audit log. */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
 });
