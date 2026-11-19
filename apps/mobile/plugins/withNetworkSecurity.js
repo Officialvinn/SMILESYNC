@@ -7,6 +7,10 @@
  * stack and its own authority, and allow plain http to localhost only, which is
  * how a debug build loads JavaScript from Metro (through adb reverse on a phone).
  * The app itself refuses non-https API URLs in src/platform/config.ts.
+ *
+ * Local development: set SMILESYNC_DEV_CA_CERT to the exported Caddy root
+ * certificate and debug builds trust it directly, with no manual install on the
+ * device. The certificate never reaches a release build.
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,12 +26,12 @@ const RELEASE = `<?xml version="1.0" encoding="utf-8"?>
 </network-security-config>
 `;
 
-const DEBUG = `<?xml version="1.0" encoding="utf-8"?>
+const debugXml = (withDevCa) => `<?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
   <base-config cleartextTrafficPermitted="false">
     <trust-anchors>
       <certificates src="system" />
-      <certificates src="user" />
+      <certificates src="user" />${withDevCa ? '\n      <certificates src="@raw/dev_ca" />' : ''}
     </trust-anchors>
   </base-config>
   <domain-config cleartextTrafficPermitted="true">
@@ -49,7 +53,15 @@ module.exports = function withNetworkSecurity(config) {
     'android',
     async (c) => {
       write(c.modRequest.platformProjectRoot, 'main', RELEASE);
-      write(c.modRequest.platformProjectRoot, 'debug', DEBUG);
+      const root = c.modRequest.platformProjectRoot;
+      const ca = process.env.SMILESYNC_DEV_CA_CERT;
+      const withDevCa = Boolean(ca && fs.existsSync(ca));
+      if (withDevCa) {
+        const raw = path.join(root, 'app/src/debug/res/raw');
+        fs.mkdirSync(raw, { recursive: true });
+        fs.copyFileSync(ca, path.join(raw, 'dev_ca.crt'));
+      }
+      write(root, 'debug', debugXml(withDevCa));
       return c;
     },
   ]);
