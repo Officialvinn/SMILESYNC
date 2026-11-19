@@ -89,6 +89,15 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX images_case ON images (case_id);
   `,
+  // Sprint 2: FR 4.1 questionnaire.
+  `
+  CREATE TABLE assessments (
+    id         TEXT PRIMARY KEY,
+    case_id    TEXT NOT NULL UNIQUE REFERENCES cases(id) ON DELETE CASCADE,
+    pain_level INTEGER NOT NULL CHECK (pain_level BETWEEN 1 AND 10),
+    duration   TEXT NOT NULL CHECK (duration IN ('LESS_THAN_1_DAY', 'DAYS_1_TO_7', 'WEEKS_1_TO_4', 'MORE_THAN_1_MONTH'))
+  );
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

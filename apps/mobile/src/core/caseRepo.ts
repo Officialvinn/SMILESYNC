@@ -8,7 +8,10 @@
  * A case can change only while it is a draft. Once submitted it is locked:
  * the CHW cannot edit a case after it syncs, and the server's review wins.
  */
-import type { CaseStatus, PatientInput, Sex, ViewType } from '@smilesync/shared';
+import {
+  symptomAssessmentSchema, type CaseStatus, type PatientInput, type Priority, type Sex, type SymptomDuration,
+  type TriageResult, type ViewType,
+} from '@smilesync/shared';
 import { captureProgress } from './capturePlan';
 import { IMAGE_BUDGET_BYTES, MAX_EXTRA_IMAGES, PER_IMAGE_MAX_BYTES } from './compression';
 import type { SqlDb } from './ports';
@@ -17,6 +20,13 @@ export class CaseLockedError extends Error {
   constructor() {
     super('This case has been sent and can no longer be changed.');
     this.name = 'CaseLockedError';
+  }
+}
+
+export class IncompleteCaseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'IncompleteCaseError';
   }
 }
 
@@ -59,6 +69,27 @@ export interface LocalPatient {
   consentDate: string;
 }
 
+export interface Assessment {
+  painLevel: number;
+  duration: SymptomDuration;
+}
+
+/** FR 5.3: what the CHW sees about sending. */
+export interface SyncInfo {
+  attempts: number;
+  lastError: string | null;
+  nextAttemptAt: string | null;
+  needsAttention: boolean;
+  syncedAt: string | null;
+}
+
+/** FR 7.3: the dentist's result, once pulled. */
+export interface TriageInfo {
+  priority: Priority | null;
+  reviewedAt: string | null;
+  notes: TriageResult['notes'];
+}
+
 export interface CaseDetail {
   id: string;
   createdAt: string;
@@ -66,6 +97,9 @@ export interface CaseDetail {
   status: CaseStatus;
   patient: LocalPatient;
   images: ImageMeta[];
+  assessment: Assessment | null;
+  sync: SyncInfo;
+  triage: TriageInfo;
 }
 
 export interface CaseListItem {
@@ -77,6 +111,10 @@ export interface CaseListItem {
   patientName: string;
   imageCount: number;
   canFinish: boolean;
+  hasAssessment: boolean;
+  needsAttention: boolean;
+  lastError: string | null;
+  priority: Priority | null;
 }
 
 interface CaseRow {
@@ -84,6 +122,14 @@ interface CaseRow {
   created_at: string;
   submitted_at: string | null;
   status: CaseStatus;
+  attempts: number;
+  last_error: string | null;
+  next_attempt_at: string | null;
+  needs_attention: number;
+  synced_at: string | null;
+  priority: Priority | null;
+  reviewed_at: string | null;
+  notes_json: string;
   patient_id: string;
   anon_id: string;
   name: string;
@@ -120,8 +166,7 @@ export class CaseRepo {
 
   async getCase(caseId: string, chwId: string): Promise<CaseDetail | null> {
     const row = await this.db.getFirstAsync<CaseRow>(
-      `SELECT c.id, c.created_at, c.submitted_at, c.status, p.id AS patient_id, p.anon_id, p.name, p.age,
-              p.location, p.sex, p.consent_date
+      `SELECT c.*, p.id AS patient_id, p.anon_id, p.name, p.age, p.location, p.sex, p.consent_date
          FROM cases c JOIN patients p ON p.id = c.patient_id
         WHERE c.id = ? AND c.chw_id = ?`,
       [caseId, chwId],
@@ -142,14 +187,27 @@ export class CaseRepo {
         consentDate: row.consent_date,
       },
       images: await this.listImages(caseId),
+      assessment: await this.db.getFirstAsync<Assessment>(
+        'SELECT pain_level AS painLevel, duration FROM assessments WHERE case_id = ?',
+        [caseId],
+      ),
+      sync: {
+        attempts: row.attempts,
+        lastError: row.last_error,
+        nextAttemptAt: row.next_attempt_at,
+        needsAttention: row.needs_attention === 1,
+        syncedAt: row.synced_at,
+      },
+      triage: { priority: row.priority, reviewedAt: row.reviewed_at, notes: JSON.parse(row.notes_json) as TriageResult['notes'] },
     };
   }
 
   /** The CHW's own cases, newest first. */
   async listCases(chwId: string): Promise<CaseListItem[]> {
-    const rows = await this.db.getAllAsync<CaseRow & { views: string | null }>(
-      `SELECT c.id, c.created_at, c.submitted_at, c.status, p.anon_id, p.name,
-              (SELECT group_concat(view_type) FROM images i WHERE i.case_id = c.id) AS views
+    const rows = await this.db.getAllAsync<CaseRow & { views: string | null; has_assessment: number }>(
+      `SELECT c.*, p.anon_id, p.name,
+              (SELECT group_concat(view_type) FROM images i WHERE i.case_id = c.id) AS views,
+              EXISTS (SELECT 1 FROM assessments a WHERE a.case_id = c.id) AS has_assessment
          FROM cases c JOIN patients p ON p.id = c.patient_id
         WHERE c.chw_id = ?
         ORDER BY c.created_at DESC`,
@@ -166,6 +224,10 @@ export class CaseRepo {
         patientName: r.name,
         imageCount: views.length,
         canFinish: captureProgress(views).canFinish,
+        hasAssessment: r.has_assessment === 1,
+        needsAttention: r.needs_attention === 1,
+        lastError: r.last_error,
+        priority: r.priority,
       };
     });
   }
@@ -222,6 +284,34 @@ export class CaseRepo {
     return id;
   }
 
+  /** FR 4.1: pain 1-10 and duration. Replaces an earlier answer on the same draft. */
+  async saveAssessment(caseId: string, answer: Assessment): Promise<void> {
+    const { painLevel, duration } = symptomAssessmentSchema.omit({ id: true }).parse(answer);
+    await this.db.transaction(async (tx) => {
+      await assertDraft(tx, caseId);
+      await tx.runAsync(
+        `INSERT INTO assessments (id, case_id, pain_level, duration) VALUES (?, ?, ?, ?)
+         ON CONFLICT (case_id) DO UPDATE SET pain_level = excluded.pain_level, duration = excluded.duration`,
+        [this.deps.uuid(), caseId, painLevel, duration],
+      );
+    });
+  }
+
+  /**
+   * FR 4.2: the draft is complete. It becomes Pending (saved, waiting to be
+   * sent) and can no longer be changed.
+   */
+  async submitCase(caseId: string, chwId: string): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await assertDraft(tx, caseId, chwId);
+      const views = await tx.getAllAsync<{ view_type: ViewType }>('SELECT view_type FROM images WHERE case_id = ?', [caseId]);
+      if (!captureProgress(views.map((v) => v.view_type)).canFinish) throw new IncompleteCaseError('Take all 3 photos first.');
+      const a = await tx.getFirstAsync<{ n: number }>('SELECT count(*) AS n FROM assessments WHERE case_id = ?', [caseId]);
+      if (!a?.n) throw new IncompleteCaseError('Answer the symptom questions first.');
+      await tx.runAsync("UPDATE cases SET submitted_at = ?, status = 'PENDING' WHERE id = ?", [this.deps.now(), caseId]);
+    });
+  }
+
   async deleteImage(caseId: string, imageId: string): Promise<void> {
     await this.db.transaction(async (tx) => {
       await assertDraft(tx, caseId);
@@ -237,6 +327,7 @@ export class CaseRepo {
     await this.db.transaction(async (tx) => {
       const row = await assertDraft(tx, caseId, chwId);
       await tx.runAsync('DELETE FROM images WHERE case_id = ?', [caseId]);
+      await tx.runAsync('DELETE FROM assessments WHERE case_id = ?', [caseId]);
       await tx.runAsync('DELETE FROM cases WHERE id = ?', [caseId]);
       await tx.runAsync('DELETE FROM patients WHERE id = ? AND NOT EXISTS (SELECT 1 FROM cases WHERE patient_id = ?)', [
         row.patient_id, row.patient_id,
