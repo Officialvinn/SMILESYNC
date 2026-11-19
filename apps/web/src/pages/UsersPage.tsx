@@ -70,7 +70,8 @@ export function UsersPage({ me }: { me: string }) {
                   {u.isActive ? 'Active' : 'Deactivated'}
                   {locked ? <span className="badge urgent">Locked until {dateTime(u.lockedUntil!)}</span> : null}
                 </td>
-                <td className="actions">
+                <td>
+                  <div className="actions">
                   {u.isActive ? (
                     <button type="button" className="secondary" disabled={u.id === me} title={u.id === me ? 'You cannot deactivate yourself' : undefined}
                       onClick={() => window.confirm(`Deactivate ${u.username}? They are logged out everywhere.`) && void change(u, { isActive: false }, `${u.username} deactivated.`)}>
@@ -92,6 +93,7 @@ export function UsersPage({ me }: { me: string }) {
                   <a href={href({ page: 'audit', resourceId: u.id })} className="small">
                     Changes to this user
                   </a>
+                  </div>
                 </td>
               </tr>
             );
