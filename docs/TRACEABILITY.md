@@ -3,7 +3,7 @@
 Status key: **Done** = implemented and tested. **Partial** = some parts done, the rest is
 planned for the sprint shown. **Planned** = not started. Paths are relative to the repo root.
 
-Last updated: Sprint 2 (2026-11-19).
+Last updated: Sprint 3 (2026-11-19).
 
 ## Functional requirements
 
@@ -22,24 +22,24 @@ Last updated: Sprint 2 (2026-11-19).
 | FR 5.1 | Automatic sync when connectivity returns | Done (code). NetInfo reconnect, app foreground, after saving, and Send now; backoff retries while online. Exercised end to end in tests and on the Android emulator (airplane mode, then automatic send on reconnect) | `apps/mobile/src/platform/sync.ts`, `apps/mobile/src/core/syncService.ts`, `packages/shared/src/sync/engine.ts` | `engine.test.ts`, `syncService.test.ts`, `apps/api/test/cases.test.ts` (end to end) |
 | FR 5.2 | Retry without duplicates or loss | Done. Client UUIDs; POST /cases is idempotent (repeat = 200, changes nothing); photos go one per request with a SHA-256 and the server lists only the missing ones, so a retry skips photos it already has; the case is stored in one transaction only when all photos are present | `packages/shared/src/sync/httpTransport.ts`, `apps/api/src/routes/cases.ts`, `apps/api/src/storage/imageStore.ts` | `httpTransport.test.ts`, `apps/api/test/cases.test.ts` (lost response, connection lost mid-photos) |
 | FR 5.3 | Status Pending / Synced / Reviewed | Done. Shown on the home list and case screen, with retry time and actionable errors; a reviewed case never moves back | `apps/mobile/src/core/syncStore.ts`, `apps/mobile/src/ui/labels.ts`, `apps/mobile/src/screens/` | `syncStore.test.ts`, `engine.test.ts` |
-| FR 6.1 | Case queue for dentists | Planned (Sprint 3). Route guarded and audited now | `apps/api/src/routes/planned.ts` | `access.test.ts` |
-| FR 6.2 | Expand and zoom images | Planned (Sprint 3) | | |
-| FR 6.3 | Filter and sort by priority, date, location | Planned (Sprint 3). Indexes in place | `schema.prisma` (`@@index`) | |
-| FR 7.1 | Assign Routine / Urgent / Emergency | Partial. Schema, enum and DB rule done; endpoint in Sprint 3 | `schemas.ts`, `schema.prisma` | `schemas.test.ts`, `auditLog.test.ts` |
-| FR 7.2 | Clinical notes and referral advice | Planned (Sprint 3). Schema done | `schema.prisma` (`ClinicalNote`) | |
-| FR 7.3 | Send triage result to the CHW's app | Partial. **Chosen implementation: pull on sync.** GET /cases/{id}/triage (submitting CHW only) and the phone's pull, display of priority, notes and referral advice are done. Dentists can set results in Sprint 3 | `apps/api/src/routes/cases.ts`, `httpTransport.ts`, `apps/mobile/src/screens/CaseScreen.tsx` | `apps/api/test/cases.test.ts`, `httpTransport.test.ts`, `syncStore.test.ts` |
-| FR 8.1 | Create, deactivate, reset users | Partial. Deactivation and token revocation enforced; admin endpoints in Sprint 3 | `apps/api/src/http/auth.ts` (`isActive`, `tokenVersion`) | `auth.test.ts`, `permissions.test.ts` |
-| FR 8.2 | Audit every access to patient data | Done for all current endpoints, including denied attempts and logins. Viewer in Sprint 3 | `apps/api/src/audit.ts`, `apps/api/src/http/auth.ts` | `access.test.ts`, `auth.test.ts`, `auditLog.test.ts` |
+| FR 6.1 | Case queue for dentists | Done. Waiting (Synced) cases by default; anonymised ID, age, sex, county, pain, duration, received time, photos, priority; never the name | `apps/api/src/routes/dashboard.ts`, `apps/web/src/pages/QueuePage.tsx` | `apps/api/test/dashboard.test.ts`, `apps/web/e2e/dentist.spec.ts` |
+| FR 6.2 | Expand and zoom images | Done. Photos decrypted per request (no-store), shown from blob URLs; full-screen viewer with zoom buttons, wheel, keyboard, drag to pan, next/previous | `apps/api/src/routes/dashboard.ts`, `apps/web/src/components/ImageViewer.tsx`, `apps/web/src/lib/zoom.ts` | `dashboard.test.ts`, `apps/web/src/lib/lib.test.ts`, `dentist.spec.ts` |
+| FR 6.3 | Filter and sort by priority, date, location | Done. Filters: status, priority, county, received date range. Sort: **highest pain first, then oldest (default, see decisions)**, oldest, newest, priority | `apps/api/src/routes/dashboard.ts`, `packages/shared/src/domain/dashboard.ts`, `apps/web/src/pages/QueuePage.tsx` | `dashboard.test.ts`, `dentist.spec.ts` |
+| FR 7.1 | Assign Routine / Urgent / Emergency | Done. Sets the case to Reviewed; a later review can change it | `apps/api/src/routes/dashboard.ts` (`PUT /cases/{id}/triage`), `apps/web/src/pages/CasePage.tsx` | `dashboard.test.ts`, `dentist.spec.ts` |
+| FR 7.2 | Clinical notes and referral advice | Done. Notes with optional referral advice; the note id is generated in the browser so a retried save cannot add it twice | `apps/api/src/routes/dashboard.ts`, `apps/web/src/pages/CasePage.tsx` | `dashboard.test.ts`, `dentist.spec.ts` |
+| FR 7.3 | Send triage result to the CHW's app | Done. **Chosen implementation: pull on sync.** The phone fetches results on every sync and every 15 minutes while results are outstanding; no push service. Verified end to end on the Android emulator and in Playwright | `apps/api/src/routes/cases.ts`, `httpTransport.ts`, `apps/mobile/src/screens/CaseScreen.tsx` | `cases.test.ts`, `dentist.spec.ts`, `syncStore.test.ts` |
+| FR 8.1 | Create, deactivate, reset users | Done. Create (PIN rules for CHWs, password rules for others), deactivate/reactivate, reset (ends sessions, clears lockout), unlock; an admin cannot deactivate themselves | `apps/api/src/routes/admin.ts`, `apps/web/src/pages/UsersPage.tsx` | `apps/api/test/admin.test.ts`, `auth.test.ts` |
+| FR 8.2 | Audit every access to patient data | Done. Every request to a guarded endpoint is logged (allowed, denied, not found), including logins, photo views and audit-log reads. Viewer with filters by user, action, outcome, resource and date | `apps/api/src/audit.ts`, `apps/api/src/http/auth.ts`, `apps/api/src/routes/admin.ts`, `apps/web/src/pages/AuditPage.tsx` | `access.test.ts`, `admin.test.ts`, `dashboard.test.ts`, `dentist.spec.ts` |
 
 ## Non-functional requirements
 
 | ID | Requirement | Status | Code | Tests |
 |---|---|---|---|---|
 | NFR 1 | AES-256 at rest, TLS 1.3 in transit | Partial. Phone: SQLCipher (AES-256) with a random 256-bit key in the Keychain/Keystore; photos stored inside the encrypted database; the app refuses to store anything if SQLCipher is not active; temporary camera files deleted after use and at startup. Checked against the exact SQLCipher 4.7.0 source expo-sqlite bundles: no plaintext in the file, unreadable without the key. Server: patient names AES-256-GCM; oral images AES-256-GCM files bound to their image id, readable only by the API user; TLS 1.3 only via Caddy (verified); the app accepts only https. Server disk: host disk encryption required | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/serialDb.ts`, `apps/mobile/src/platform/`, `apps/api/src/security/fieldCrypto.ts`, `infra/caddy/Caddyfile` | `localDb.test.ts`, `serialDb.test.ts`, `unit.test.ts` |
-| NFR 2 | Queue loads in under 3 s | Planned (Sprint 3 and hardening). Queue indexes in place | `schema.prisma` | |
+| NFR 2 | Queue loads in under 3 s | Partial. Server answers the first page of a 500-case queue in well under 1 s in tests; the dashboard bundle is 93 KB gzipped. Not yet measured on a slow connection | `apps/api/src/routes/dashboard.ts`, `schema.prisma` (indexes) | `dashboard.test.ts` (NFR 2) |
 | NFR 3 | CHW submission in under 5 min | Partial. Step counter, 60 dp touch targets, large text, camera opens straight to the next missing view, last county remembered. Timed field test after Sprint 2 | `apps/mobile/src/ui/`, `apps/mobile/src/screens/` | Field test |
 | NFR 4 | Audit log kept 12+ months, not editable | Done. Trigger blocks UPDATE, DELETE and TRUNCATE for everyone; runtime role has insert and select only; nothing deletes rows | migration `..._audit_and_constraints`, `infra/postgres/init/01-roles.sh` | `auditLog.test.ts` |
-| NFR 5 | Android 9+, iOS 14+, Chrome/Edge/Safari | Partial. Android: minimum API 24 (Android 7), so Android 9+ is covered. **iOS: Expo SDK 57 requires iOS 16.4+, short of the SRS's iOS 14+** (see note below). Dashboard in Sprint 3 | `apps/mobile/app.json` | |
+| NFR 5 | Android 9+, iOS 14+, Chrome/Edge/Safari | Partial. Android: minimum API 24 (Android 7), so Android 9+ is covered. **iOS: Expo SDK 57 requires iOS 16.4+, short of the SRS's iOS 14+** (see note below). Dashboard tested in Chromium by Playwright; Edge and Safari not yet checked | `apps/mobile/app.json` | |
 | NFR 6 | Kenya Data Protection Act 2019 | Partial. Consent first and recorded with time; names hidden from dentists and admins; EXIF (including GPS) not requested and dropped by re-encoding; location, microphone and storage permissions blocked; Android backup off; drafts deletable on withdrawn consent; synthetic data only. Server-side erasure still has no path | `permissions.ts`, `apps/mobile/src/core/`, `apps/mobile/app.json` | `permissions.test.ts`, `caseRepo.test.ts` |
 | NFR 7 | 99.5% monthly uptime | Not applicable to the local demo. Revisit when deployed to a VM | | |
 
@@ -66,18 +66,18 @@ Last updated: Sprint 2 (2026-11-19).
 | Diagram | Implementation | Status |
 |---|---|---|
 | `POST /cases` with case, images and assessment | `POST /cases` carries the case JSON (patient, image metadata with SHA-256, assessment). Photos go as `PUT /cases/{id}/images/{imageId}`, raw bytes, one per request; the server answers 409 with the photos it still needs. Repeats return 200 | Done (Sprint 2). Chosen so a weak connection never re-sends a photo the server has (your FR 5.2 decision) and a dentist never sees a half-uploaded case |
-| `GET /cases?sort=priority` for the queue | The queue holds Synced cases, which have no priority yet | **Open question** |
-| `PUT /cases/{id}/triage` | Same. Sets priority and adds a note with a client-generated ID, so a retry does not add it twice | Sprint 3 |
+| `GET /cases?sort=priority` for the queue | `sort=priority` exists, but the default is highest pain first, then oldest, because waiting cases have no priority yet | Done (Sprint 3). Default chosen pending your answer to open question 2 |
+| `PUT /cases/{id}/triage` | Same. Sets priority and adds a note with a client-generated ID, so a retry does not add it twice | Done (Sprint 3) |
 | `GET /cases/{id}/triage` per case | Same, one request per waiting case. A batch endpoint can be added without engine changes | Done (Sprint 2). Batch still an **open question** |
 | Not shown | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, image download, admin users, audit log | Added |
 
 ## Open questions
 
 1. **Sex field.** FR 2.1 lists name, age and location only. Should sex be collected?
-2. **Queue sort.** Synced cases have no priority, so `sort=priority` cannot order the queue. Should the default order be oldest first, or highest pain level first?
+2. **Queue sort.** Synced cases have no priority, so `sort=priority` cannot order the queue. **Sprint 3 default: highest pain first, then oldest** (oldest first is one click away). Confirm or overrule.
 3. **Batch result fetch.** One `GET /cases/{id}/triage` per waiting case is slow on a weak connection. Can a batch endpoint be added next to the diagram's endpoint?
 4. **Consent order.** Both diagrams collect name, age and location before consent, but FR 2.3 says consent comes before any data is captured. **Sprint 1 implements consent first**, following FR 2.3. Confirm or overrule.
-5. **Revealing names to dentists.** Dentists never see names. Is a deliberate, audited "show name" action needed?
+5. **Revealing names to dentists.** Dentists never see names. Is a deliberate, audited "show name" action needed? **Sprint 3 built none.**
 6. **Erasure requests.** The Data Protection Act gives patients a right to erasure, but nothing deletes data now. A controlled admin process would be needed.
 7. **iOS minimum.** Expo SDK 57 needs iOS 16.4+, but the SRS says iOS 14+. Accept iOS 16.4+, or use an older SDK?
 
@@ -103,3 +103,16 @@ generated Xcode project). The SRS asks for iOS 14+. iPhones that stop at iOS 15
 is API 24 (Android 7.0), below the SRS's Android 9. Options: accept iOS 16.4+ (most
 CHWs in Kenya are likely to carry Android), or move to an older Expo SDK, which stops
 getting security fixes sooner. **Open question 7.**
+
+## Dashboard decisions made in Sprint 3
+
+| Decision | Why |
+|---|---|
+| Queue default: Synced cases, highest pain first, then oldest | Waiting cases have no priority yet (open question 2) |
+| No name anywhere in dentist API responses | Your decision; tests check that the name never appears |
+| Photos served decrypted per request with `Cache-Control: no-store`, shown from blob URLs that are revoked | No decrypted photo is cached by the browser or a proxy |
+| Session token in `sessionStorage`, 8-hour expiry | Ends when the tab closes; never shared with other tabs |
+| Strict Content-Security-Policy from Caddy (`'self'` only, `blob:` images) | Limits damage from any injected script |
+| Hash-based routes, no router library | Reload-safe with a plain static file server; fewer dependencies |
+| Seed photos are drawn PNGs made with `node:zlib` | Synthetic data only; no image library |
+| CI runs the whole docker stack and the Playwright happy path with throwaway secrets | The MVP flow is tested on every push |

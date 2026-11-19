@@ -15,7 +15,7 @@ is in [docs/TRACEABILITY.md](docs/TRACEABILITY.md).
 packages/shared   Types, Zod schemas, access rules, offline sync engine (plain TypeScript)
 apps/api          REST API: Express + Prisma + PostgreSQL
 apps/mobile       CHW app: React Native + Expo SDK 57 development build
-apps/web          Dentist and admin dashboard: React + Vite (Sprint 3)
+apps/web          Dentist and admin dashboard: React + Vite, served by Caddy
 infra/            Caddy (TLS 1.3) and PostgreSQL init scripts
 docs/             SRS, diagrams, traceability
 ```
@@ -33,7 +33,7 @@ npm install
 cp .env.example .env     # fill in every value; the file explains how to generate secrets
 ```
 
-## Run the local stack (PostgreSQL, API, Caddy)
+## Run the local stack (PostgreSQL, API, dashboard, Caddy)
 
 ```sh
 docker compose up -d --build
@@ -43,6 +43,24 @@ curl -k https://localhost/api/health              # {"status":"ok"}
 
 `-k` is needed because Caddy uses its own local certificate authority for
 `localhost`. Seeded logins are listed at the top of `apps/api/prisma/seed.ts`.
+
+Open the dashboard at <https://localhost/> (your browser will warn about the local
+certificate). Log in as `dentist1` for the case queue, or `admin1` for users and
+the audit log, with `SEED_PASSWORD` from your `.env`.
+
+Dashboard development with hot reload (the stack must be running for the API):
+
+```sh
+npm run dev:web        # http://localhost:5173, /api proxied to the stack
+```
+
+End-to-end test of the dentist's path against the running stack:
+
+```sh
+set -a; . ./.env; set +a
+npx --workspace @smilesync/web playwright install chromium   # once
+npm run e2e
+```
 
 ## Run the tests
 
