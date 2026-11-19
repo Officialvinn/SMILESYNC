@@ -3,7 +3,7 @@
 Status key: **Done** = implemented and tested. **Partial** = some parts done, the rest is
 planned for the sprint shown. **Planned** = not started. Paths are relative to the repo root.
 
-Last updated: Sprint 3 (2026-11-19).
+Last updated: Hardening (2026-11-19).
 
 ## Functional requirements
 
@@ -35,13 +35,13 @@ Last updated: Sprint 3 (2026-11-19).
 
 | ID | Requirement | Status | Code | Tests |
 |---|---|---|---|---|
-| NFR 1 | AES-256 at rest, TLS 1.3 in transit | Partial. Phone: SQLCipher (AES-256) with a random 256-bit key in the Keychain/Keystore; photos stored inside the encrypted database; the app refuses to store anything if SQLCipher is not active; temporary camera files deleted after use and at startup. Checked against the exact SQLCipher 4.7.0 source expo-sqlite bundles: no plaintext in the file, unreadable without the key. Server: patient names AES-256-GCM; oral images AES-256-GCM files bound to their image id, readable only by the API user; TLS 1.3 only via Caddy (verified); the app accepts only https. Server disk: host disk encryption required | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/serialDb.ts`, `apps/mobile/src/platform/`, `apps/api/src/security/fieldCrypto.ts`, `infra/caddy/Caddyfile` | `localDb.test.ts`, `serialDb.test.ts`, `unit.test.ts` |
-| NFR 2 | Queue loads in under 3 s | Partial. Server answers the first page of a 500-case queue in well under 1 s in tests; the dashboard bundle is 93 KB gzipped. Not yet measured on a slow connection | `apps/api/src/routes/dashboard.ts`, `schema.prisma` (indexes) | `dashboard.test.ts` (NFR 2) |
-| NFR 3 | CHW submission in under 5 min | Partial. Step counter, 60 dp touch targets, large text, camera opens straight to the next missing view, last county remembered. Timed field test after Sprint 2 | `apps/mobile/src/ui/`, `apps/mobile/src/screens/` | Field test |
+| NFR 1 | AES-256 at rest, TLS 1.3 in transit | Partial. Phone: SQLCipher (AES-256) with a random 256-bit key in the Keychain/Keystore; photos stored inside the encrypted database; the app refuses to store anything if SQLCipher is not active; temporary camera files deleted after use and at startup. Checked against the exact SQLCipher 4.7.0 source expo-sqlite bundles: no plaintext in the file, unreadable without the key. Server: patient names AES-256-GCM; oral images AES-256-GCM files bound to their image id, readable only by the API user; TLS 1.3 only via Caddy (verified); the app accepts only https. Server disk: host disk encryption required. Hardening: failed logins limited per network address; phone asks for the PIN again after 5 minutes away; see docs/SECURITY_REVIEW.md | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/serialDb.ts`, `apps/mobile/src/platform/`, `apps/api/src/security/fieldCrypto.ts`, `infra/caddy/Caddyfile` | `localDb.test.ts`, `serialDb.test.ts`, `unit.test.ts` |
+| NFR 2 | Queue loads in under 3 s | Done. Measured in Chromium with an empty cache on emulated 10 Mbit/s broadband (40 ms): 341-1,094 ms to the first case row. Rural 3G (1.6 Mbit/s, 300 ms), for information: about 1.5 s. Server: 500-case queue page well under 1 s | `apps/api/src/routes/dashboard.ts`, `schema.prisma` (indexes) | `apps/web/e2e/performance.spec.ts`, `dashboard.test.ts` |
+| NFR 3 | CHW submission in under 5 min | Partial. Four-step flow with a progress bar, one clear action per screen, 56 dp targets, contrast tested to WCAG AA. The 5-minute target needs timing with real CHWs (field-test checklist) | `apps/mobile/src/screens/`, `apps/mobile/src/ui/` | `contrast.test.ts`, `docs/FIELD_TEST.md` |
 | NFR 4 | Audit log kept 12+ months, not editable | Done. Trigger blocks UPDATE, DELETE and TRUNCATE for everyone; runtime role has insert and select only; nothing deletes rows | migration `..._audit_and_constraints`, `infra/postgres/init/01-roles.sh` | `auditLog.test.ts` |
-| NFR 5 | Android 9+, iOS 14+, Chrome/Edge/Safari | Partial. Android: minimum API 24 (Android 7), so Android 9+ is covered. **iOS: Expo SDK 57 requires iOS 16.4+, short of the SRS's iOS 14+** (see note below). Dashboard tested in Chromium by Playwright; Edge and Safari not yet checked | `apps/mobile/app.json` | |
-| NFR 6 | Kenya Data Protection Act 2019 | Partial. Consent first and recorded with time; names hidden from dentists and admins; EXIF (including GPS) not requested and dropped by re-encoding; location, microphone and storage permissions blocked; Android backup off; drafts deletable on withdrawn consent; synthetic data only. Server-side erasure still has no path | `permissions.ts`, `apps/mobile/src/core/`, `apps/mobile/app.json` | `permissions.test.ts`, `caseRepo.test.ts` |
-| NFR 7 | 99.5% monthly uptime | Not applicable to the local demo. Revisit when deployed to a VM | | |
+| NFR 5 | Android 9+, iOS 14+, Chrome/Edge/Safari | Partial. Android: verified on a Pixel 7 Pro and the emulator (minimum API 24). Dashboard: Playwright happy path passes in Chromium (Chrome, Edge) and WebKit (Safari). **iOS: not built; Expo SDK 57 needs iOS 16.4+ (open question 7)** | `apps/mobile/app.json`, `apps/web/playwright.config.ts` | `dentist.spec.ts` (chromium, webkit) |
+| NFR 6 | Kenya Data Protection Act 2019 | Partial. Consent first and recorded with time; names hidden from dentists and admins; EXIF (including GPS) not requested and dropped by re-encoding; location, microphone and storage permissions blocked; Android backup off; drafts deletable on withdrawn consent; synthetic data only. Uploaded photos of cases that never arrive are deleted after 7 days. Server-side erasure still has no path | `permissions.ts`, `apps/mobile/src/core/`, `apps/mobile/app.json` | `permissions.test.ts`, `caseRepo.test.ts` |
+| NFR 7 | 99.5% monthly uptime | Partial for the local demo: services restart automatically and have health checks; backup, verify and restore scripts (verify proved a full restore). Uptime itself depends on hosting, still to be chosen | `docker-compose.yml`, `scripts/` | `scripts/verify-backup.sh` |
 
 ## Differences from the class diagram (B.2)
 
@@ -116,3 +116,16 @@ getting security fixes sooner. **Open question 7.**
 | Hash-based routes, no router library | Reload-safe with a plain static file server; fewer dependencies |
 | Seed photos are drawn PNGs made with `node:zlib` | Synthetic data only; no image library |
 | CI runs the whole docker stack and the Playwright happy path with throwaway secrets | The MVP flow is tested on every push |
+
+## Hardening (after Sprint 3)
+
+| Item | Where |
+|---|---|
+| Security review: what was checked, evidence, open risks | `docs/SECURITY_REVIEW.md` |
+| Field-test checklist, with a requirement per task | `docs/FIELD_TEST.md` |
+| User guide for CHWs, dentists and administrators | `docs/USER_GUIDE.md` |
+| Failed-login limit per address (FR 1.1) | `apps/api/src/http/rateLimit.ts`, `hardening.test.ts` |
+| Abandoned uploads deleted after 7 days (NFR 6) | `apps/api/src/storage/imageStore.ts`, `apps/api/src/server.ts`, `hardening.test.ts` |
+| Phone locks after 5 minutes in the background | `apps/mobile/src/core/appLock.ts`, `appLock.test.ts` |
+| Automated accessibility: axe WCAG 2.1 AA on every dashboard page; phone contrast | `apps/web/e2e/accessibility.spec.ts`, `contrast.test.ts` |
+| Backups | `scripts/backup.sh`, `scripts/verify-backup.sh`, `scripts/restore.sh` |
