@@ -3,7 +3,7 @@
 Status key: **Done** = implemented and tested. **Partial** = some parts done, the rest is
 planned for the sprint shown. **Planned** = not started. Paths are relative to the repo root.
 
-Last updated: Sprint 1 (2026-10-28).
+Last updated: Sprint 2 (2026-11-19).
 
 ## Functional requirements
 
@@ -17,17 +17,17 @@ Last updated: Sprint 1 (2026-10-28).
 | FR 3.1 | Launch camera | Done (code). In-app camera with light toggle; not yet run on a device | `apps/mobile/src/screens/CaptureScreen.tsx` | Manual, on a development build |
 | FR 3.2 | Guidance for at least 3 standard views | Done. Written steps per view, a framing guide, preview and retake; the app goes through the 3 views in order and blocks Continue until all exist. Up to 3 extras | `apps/mobile/src/core/capturePlan.ts`, `apps/mobile/src/screens/CaptureScreen.tsx` | `capturePlan.test.ts`, `caseRepo.test.ts` |
 | FR 3.3 | Compress each submission to under 2 MB | Done on the phone. Each photo is re-encoded as JPEG down a size ladder until it fits an equal share (about 344 KB) of the 2 MB budget; the store refuses anything that would exceed it. Upload-side guard in the sync engine and DB | `apps/mobile/src/core/compression.ts`, `apps/mobile/src/platform/photos.ts`, `apps/mobile/src/core/caseRepo.ts`, `engine.ts` (`payloadBytes`) | `compression.test.ts`, `caseRepo.test.ts`, `engine.test.ts` |
-| FR 4.1 | Pain 1-10 and duration | Partial. Schema and DB check done; form in Sprint 2 | `schemas.ts`, migration `..._audit_and_constraints` | `schemas.test.ts`, `auditLog.test.ts` |
-| FR 4.2 | Save locally when offline | Partial. Patients, drafts and photos are saved in the encrypted phone database with the sync columns in place. Questionnaire, submit and the SQLite `SyncStore` in Sprint 2 | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/caseRepo.ts`, `packages/shared/src/sync/types.ts` | `localDb.test.ts`, `caseRepo.test.ts`, `engine.test.ts` |
-| FR 5.1 | Automatic sync when connectivity returns | Partial. Engine and AutoSync done; NetInfo wiring in Sprint 2 | `packages/shared/src/sync/engine.ts` (`AutoSync`) | `engine.test.ts` |
-| FR 5.2 | Retry without duplicates or loss | Partial. Client side done; server idempotent upsert in Sprint 2 | `packages/shared/src/sync/engine.ts` | `engine.test.ts` (lost response, crash, 200-round fault run) |
-| FR 5.3 | Status Pending / Synced / Reviewed | Partial. Engine transitions and DB rule done; status UI in Sprint 2 | `engine.ts`, `memoryStore.ts`, migration `..._audit_and_constraints` | `engine.test.ts`, `auditLog.test.ts` |
+| FR 4.1 | Pain 1-10 and duration | Done. Step 4 of the CHW flow: ten large pain buttons and four duration choices; validated on the phone, the server and by DB checks | `apps/mobile/src/screens/SymptomsScreen.tsx`, `apps/mobile/src/core/caseRepo.ts`, `schemas.ts` | `syncStore.test.ts`, `schemas.test.ts`, `auditLog.test.ts` |
+| FR 4.2 | Save locally when offline | Done. Save case makes the draft Pending in the encrypted phone database and locks it; only complete cases (3 photos + questionnaire) can be saved | `apps/mobile/src/core/caseRepo.ts`, `apps/mobile/src/core/syncStore.ts`, `apps/mobile/src/core/localDb.ts` | `syncStore.test.ts`, `caseRepo.test.ts` |
+| FR 5.1 | Automatic sync when connectivity returns | Done (code). NetInfo reconnect, app foreground, after saving, and Send now; backoff retries while online. Exercised end to end in tests; on-device run pending | `apps/mobile/src/platform/sync.ts`, `apps/mobile/src/core/syncService.ts`, `packages/shared/src/sync/engine.ts` | `engine.test.ts`, `syncService.test.ts`, `apps/api/test/cases.test.ts` (end to end) |
+| FR 5.2 | Retry without duplicates or loss | Done. Client UUIDs; POST /cases is idempotent (repeat = 200, changes nothing); photos go one per request with a SHA-256 and the server lists only the missing ones, so a retry skips photos it already has; the case is stored in one transaction only when all photos are present | `packages/shared/src/sync/httpTransport.ts`, `apps/api/src/routes/cases.ts`, `apps/api/src/storage/imageStore.ts` | `httpTransport.test.ts`, `apps/api/test/cases.test.ts` (lost response, connection lost mid-photos) |
+| FR 5.3 | Status Pending / Synced / Reviewed | Done. Shown on the home list and case screen, with retry time and actionable errors; a reviewed case never moves back | `apps/mobile/src/core/syncStore.ts`, `apps/mobile/src/ui/labels.ts`, `apps/mobile/src/screens/` | `syncStore.test.ts`, `engine.test.ts` |
 | FR 6.1 | Case queue for dentists | Planned (Sprint 3). Route guarded and audited now | `apps/api/src/routes/planned.ts` | `access.test.ts` |
 | FR 6.2 | Expand and zoom images | Planned (Sprint 3) | | |
 | FR 6.3 | Filter and sort by priority, date, location | Planned (Sprint 3). Indexes in place | `schema.prisma` (`@@index`) | |
 | FR 7.1 | Assign Routine / Urgent / Emergency | Partial. Schema, enum and DB rule done; endpoint in Sprint 3 | `schemas.ts`, `schema.prisma` | `schemas.test.ts`, `auditLog.test.ts` |
 | FR 7.2 | Clinical notes and referral advice | Planned (Sprint 3). Schema done | `schema.prisma` (`ClinicalNote`) | |
-| FR 7.3 | Send triage result to the CHW's app | Partial. **Chosen implementation: pull on sync.** The app fetches results each time it syncs and every 15 minutes while results are outstanding. No push service. Engine side done; endpoint in Sprint 2 | `engine.ts` (pull step, `AutoSync` poll) | `engine.test.ts` ("pulling triage results") |
+| FR 7.3 | Send triage result to the CHW's app | Partial. **Chosen implementation: pull on sync.** GET /cases/{id}/triage (submitting CHW only) and the phone's pull, display of priority, notes and referral advice are done. Dentists can set results in Sprint 3 | `apps/api/src/routes/cases.ts`, `httpTransport.ts`, `apps/mobile/src/screens/CaseScreen.tsx` | `apps/api/test/cases.test.ts`, `httpTransport.test.ts`, `syncStore.test.ts` |
 | FR 8.1 | Create, deactivate, reset users | Partial. Deactivation and token revocation enforced; admin endpoints in Sprint 3 | `apps/api/src/http/auth.ts` (`isActive`, `tokenVersion`) | `auth.test.ts`, `permissions.test.ts` |
 | FR 8.2 | Audit every access to patient data | Done for all current endpoints, including denied attempts and logins. Viewer in Sprint 3 | `apps/api/src/audit.ts`, `apps/api/src/http/auth.ts` | `access.test.ts`, `auth.test.ts`, `auditLog.test.ts` |
 
@@ -35,7 +35,7 @@ Last updated: Sprint 1 (2026-10-28).
 
 | ID | Requirement | Status | Code | Tests |
 |---|---|---|---|---|
-| NFR 1 | AES-256 at rest, TLS 1.3 in transit | Partial. Phone: SQLCipher (AES-256) with a random 256-bit key in the Keychain/Keystore; photos stored inside the encrypted database; the app refuses to store anything if SQLCipher is not active; temporary camera files deleted after use and at startup. Checked against the exact SQLCipher 4.7.0 source expo-sqlite bundles: no plaintext in the file, unreadable without the key. Server: patient names AES-256-GCM; TLS 1.3 only via Caddy (verified); the app accepts only https. Server disk: host disk encryption required | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/serialDb.ts`, `apps/mobile/src/platform/`, `apps/api/src/security/fieldCrypto.ts`, `infra/caddy/Caddyfile` | `localDb.test.ts`, `serialDb.test.ts`, `unit.test.ts` |
+| NFR 1 | AES-256 at rest, TLS 1.3 in transit | Partial. Phone: SQLCipher (AES-256) with a random 256-bit key in the Keychain/Keystore; photos stored inside the encrypted database; the app refuses to store anything if SQLCipher is not active; temporary camera files deleted after use and at startup. Checked against the exact SQLCipher 4.7.0 source expo-sqlite bundles: no plaintext in the file, unreadable without the key. Server: patient names AES-256-GCM; oral images AES-256-GCM files bound to their image id, readable only by the API user; TLS 1.3 only via Caddy (verified); the app accepts only https. Server disk: host disk encryption required | `apps/mobile/src/core/localDb.ts`, `apps/mobile/src/core/serialDb.ts`, `apps/mobile/src/platform/`, `apps/api/src/security/fieldCrypto.ts`, `infra/caddy/Caddyfile` | `localDb.test.ts`, `serialDb.test.ts`, `unit.test.ts` |
 | NFR 2 | Queue loads in under 3 s | Planned (Sprint 3 and hardening). Queue indexes in place | `schema.prisma` | |
 | NFR 3 | CHW submission in under 5 min | Partial. Step counter, 60 dp touch targets, large text, camera opens straight to the next missing view, last county remembered. Timed field test after Sprint 2 | `apps/mobile/src/ui/`, `apps/mobile/src/screens/` | Field test |
 | NFR 4 | Audit log kept 12+ months, not editable | Done. Trigger blocks UPDATE, DELETE and TRUNCATE for everyone; runtime role has insert and select only; nothing deletes rows | migration `..._audit_and_constraints`, `infra/postgres/init/01-roles.sh` | `auditLog.test.ts` |
@@ -65,10 +65,10 @@ Last updated: Sprint 1 (2026-10-28).
 
 | Diagram | Implementation | Status |
 |---|---|---|
-| `POST /cases` with case, images and assessment | Same: one multipart request including the patient record. Repeats return 200 instead of 201 | Route guarded now, handler in Sprint 2 |
+| `POST /cases` with case, images and assessment | `POST /cases` carries the case JSON (patient, image metadata with SHA-256, assessment). Photos go as `PUT /cases/{id}/images/{imageId}`, raw bytes, one per request; the server answers 409 with the photos it still needs. Repeats return 200 | Done (Sprint 2). Chosen so a weak connection never re-sends a photo the server has (your FR 5.2 decision) and a dentist never sees a half-uploaded case |
 | `GET /cases?sort=priority` for the queue | The queue holds Synced cases, which have no priority yet | **Open question** |
 | `PUT /cases/{id}/triage` | Same. Sets priority and adds a note with a client-generated ID, so a retry does not add it twice | Sprint 3 |
-| `GET /cases/{id}/triage` per case | Same. The engine already asks for all waiting cases at once, so a batch endpoint can be added without engine changes | **Open question** |
+| `GET /cases/{id}/triage` per case | Same, one request per waiting case. A batch endpoint can be added without engine changes | Done (Sprint 2). Batch still an **open question** |
 | Not shown | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, image download, admin users, audit log | Added |
 
 ## Open questions
@@ -91,7 +91,10 @@ Last updated: Sprint 1 (2026-10-28).
 | Up to 3 extra photos (6 in total), each held to an equal share of the 2 MB budget | A later photo can never force a retake of an earlier one |
 | One CHW per phone for offline login; each CHW sees only their own cases | Simplest safe rule; shared phones would need per-user keys |
 | Each registration creates a new patient record | Returning-patient lookup is not in the SRS |
-| Drafts (still capturing) are separate from Pending (submitted) | Pending must mean "complete and ready to send"; set in Sprint 2 when the questionnaire is done |
+| Drafts (still capturing) are separate from Pending (submitted) | Pending means "complete and ready to send"; Save case on the symptoms step makes it Pending |
+| Photos uploaded as raw bytes, not multipart or base64 | No upload library; React Native sends a Uint8Array body as binary; base64 would add a third to every upload |
+| Login token refreshed before a sync when it has under 3 days left | FR 1.1 "token refreshes on sync" without an extra request on every run |
+| Uploaded photos for a case that never arrives stay in the server's incoming folder | Clean-up job planned for hardening (data minimisation) |
 | No navigation library | The CHW flow is linear; a small state machine is enough |
 
 **Platform note (NFR 5).** Expo SDK 57 sets the iOS minimum to 16.4 (read from the
