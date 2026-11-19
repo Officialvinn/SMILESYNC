@@ -2,7 +2,8 @@
  * Screen flow. A small state machine instead of a navigation library: the
  * CHW flow is linear (NFR 3), and fewer dependencies is easier to maintain.
  *
- *   boot -> login -> home -> consent -> patient -> capture -> case
+ *   boot -> login -> home -> consent -> patient -> capture -> symptoms -> home
+ *                         \-> case (status, dentist result)
  */
 import { randomUUID } from 'expo-crypto';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +15,8 @@ import { AuthService, bcryptPinHasher, type Session } from './core/offlineAuth';
 import { recordConsent, type Consent } from './core/registration';
 import { authApi } from './platform/api';
 import { openDatabase } from './platform/database';
+import type { SqlDb } from './core/ports';
+import { useSync } from './platform/sync';
 import { cleanUpTemporaryPhotos } from './platform/photos';
 import { secureKV } from './platform/secureKV';
 import { CaptureScreen } from './screens/CaptureScreen';
@@ -22,6 +25,7 @@ import { ConsentScreen } from './screens/ConsentScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { PatientScreen } from './screens/PatientScreen';
+import { SymptomsScreen } from './screens/SymptomsScreen';
 import { Banner, BigButton, Body, Screen, Title } from './ui/components';
 
 type Route =
@@ -29,10 +33,12 @@ type Route =
   | { name: 'consent' }
   | { name: 'patient'; consent: Consent }
   | { name: 'capture'; caseId: string }
+  | { name: 'symptoms'; caseId: string }
   | { name: 'case'; caseId: string };
 
 export default function App() {
   const auth = useMemo(() => new AuthService({ api: authApi, kv: secureKV, hasher: bcryptPinHasher() }), []);
+  const [db, setDb] = useState<SqlDb | null>(null);
   const [repo, setRepo] = useState<CaseRepo | null>(null);
   const [fatal, setFatal] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -42,9 +48,15 @@ export default function App() {
   useEffect(() => {
     cleanUpTemporaryPhotos();
     openDatabase()
-      .then((db) => setRepo(new CaseRepo(db, { uuid: randomUUID, now: () => new Date().toISOString() })))
+      .then((opened) => {
+        setDb(opened);
+        setRepo(new CaseRepo(opened, { uuid: randomUUID, now: () => new Date().toISOString() }));
+      })
       .catch((e: unknown) => setFatal(e instanceof Error ? e.message : String(e)));
   }, []);
+
+  // FR 5.1: automatic sync while a CHW is logged in.
+  const sync = useSync(db, auth, session?.user.id ?? null);
 
   // Android back button: one step back, never out of the app mid-case.
   useEffect(() => {
@@ -52,6 +64,7 @@ export default function App() {
       if (!session || route.name === 'home') return false;
       if (route.name === 'case') setRoute({ name: 'home' });
       else if (route.name === 'patient') setRoute({ name: 'consent' });
+      else if (route.name === 'symptoms') setRoute({ name: 'capture', caseId: route.caseId });
       else if (route.name !== 'capture') setRoute({ name: 'home' });
       return true;
     });
@@ -105,8 +118,21 @@ export default function App() {
       <CaptureScreen
         caseId={route.caseId}
         repo={repo}
-        onDone={() => setRoute({ name: 'case', caseId: route.caseId })}
+        onDone={() => setRoute({ name: 'symptoms', caseId: route.caseId })}
         onExit={() => setRoute({ name: 'home' })}
+      />
+    );
+  } else if (route.name === 'symptoms') {
+    screen = (
+      <SymptomsScreen
+        caseId={route.caseId}
+        chwId={session.user.id}
+        repo={repo}
+        onSaved={() => {
+          setRoute({ name: 'home' });
+          void sync.syncNow(false);
+        }}
+        onBack={() => setRoute({ name: 'capture', caseId: route.caseId })}
       />
     );
   } else if (route.name === 'case') {
@@ -115,7 +141,10 @@ export default function App() {
         caseId={route.caseId}
         chwId={session.user.id}
         repo={repo}
+        version={sync.version}
         onEditPhotos={() => setRoute({ name: 'capture', caseId: route.caseId })}
+        onSymptoms={() => setRoute({ name: 'symptoms', caseId: route.caseId })}
+        onSendNow={() => void sync.syncNow()}
         onHome={() => setRoute({ name: 'home' })}
       />
     );
@@ -124,8 +153,19 @@ export default function App() {
       <HomeScreen
         session={session}
         repo={repo}
+        sync={sync}
+        onSendNow={() => void sync.syncNow()}
+        onLoginAgain={() => setSession(null)}
         onNewPatient={() => setRoute({ name: 'consent' })}
-        onOpenCase={(c) => setRoute(c.isDraft && !c.canFinish ? { name: 'capture', caseId: c.id } : { name: 'case', caseId: c.id })}
+        onOpenCase={(c) =>
+          setRoute(
+            c.isDraft && !c.canFinish
+              ? { name: 'capture', caseId: c.id }
+              : c.isDraft && !c.hasAssessment
+                ? { name: 'symptoms', caseId: c.id }
+                : { name: 'case', caseId: c.id },
+          )
+        }
         onLogout={() => setSession(null)}
       />
     );
