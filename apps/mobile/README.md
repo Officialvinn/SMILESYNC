@@ -27,6 +27,10 @@ npm run typecheck -w @smilesync/mobile
 You need one of:
 
 - **Android:** Android Studio with an emulator, or an Android phone with USB debugging on.
+  Build with **JDK 17**, not the Java 25 that Android Studio bundles: on Java 25 the
+  native build step for expo-sqlite fails with "A restricted method in java.lang.System
+  has been called". Install it with `brew install openjdk@17`, then
+  `export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`.
 - **iOS:** Xcode, CocoaPods (`brew install cocoapods`) and an iOS simulator runtime
   (Xcode > Settings > Components). iOS 16.4 or newer.
 
