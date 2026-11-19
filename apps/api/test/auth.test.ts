@@ -94,7 +94,12 @@ describe('token checks', () => {
   it('rejects a tampered, expired, wrongly signed or unsigned token', async () => {
     const { user, token } = await loginAs(h, 'ADMIN');
     const sign = (secret: string, opts: jwt.SignOptions) =>
-      jwt.sign({ role: 'ADMIN', tv: 0 }, secret, { subject: user.id, issuer: 'smilesync-api', ...opts });
+      // iat from the harness clock, so expiresIn is relative to the server's time.
+      jwt.sign({ role: 'ADMIN', tv: 0, iat: Math.floor(h.clock.now().getTime() / 1000) }, secret, {
+        subject: user.id,
+        issuer: 'smilesync-api',
+        ...opts,
+      });
     const bad = [
       token.slice(0, -2) + 'xx',
       sign(TEST_JWT_SECRET, { expiresIn: -10 }),
@@ -109,7 +114,7 @@ describe('token checks', () => {
 
   it('rejects a token whose role claim no longer matches the account', async () => {
     const { user } = await loginAs(h, 'CHW');
-    const forged = jwt.sign({ role: 'ADMIN', tv: 0 }, TEST_JWT_SECRET, { subject: user.id, issuer: 'smilesync-api', expiresIn: 3600 });
+    const forged = jwt.sign({ role: 'ADMIN', tv: 0, iat: Math.floor(h.clock.now().getTime() / 1000) }, TEST_JWT_SECRET, { subject: user.id, issuer: 'smilesync-api', expiresIn: 3600 });
     expect((await h.http().get('/admin/audit-log').set('Authorization', `Bearer ${forged}`)).status).toBe(401);
   });
 
@@ -119,5 +124,15 @@ describe('token checks', () => {
     const res = await h.http().post('/auth/refresh').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.token).not.toBe(token);
+  });
+});
+
+describe('one clock for signing and checking tokens', () => {
+  it('a token signed at server time T stays valid at T + 1 hour and expires at T + TTL', async () => {
+    const { token } = await loginAs(h, 'DENTIST');
+    h.clock.advance(3600_000);
+    expect((await h.http().get('/auth/me').set('Authorization', `Bearer ${token}`)).status).toBe(200);
+    h.clock.advance(TOKEN_TTL_SECONDS.DENTIST * 1000);
+    expect((await h.http().get('/auth/me').set('Authorization', `Bearer ${token}`)).status).toBe(401);
   });
 });

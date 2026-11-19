@@ -25,7 +25,7 @@ export function createApp({ db, config, now = () => new Date() }: AppDeps) {
   });
 
   app.use('/auth', authRouter(db, config, now));
-  app.use(plannedRouter(db, config.JWT_SECRET));
+  app.use(plannedRouter(db, config.JWT_SECRET, now));
   app.use((_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });

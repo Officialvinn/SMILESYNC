@@ -15,11 +15,11 @@ declare module 'express-serve-static-core' {
 }
 
 /** Requires a valid token for an active account whose token has not been revoked. */
-export function requireAuth(db: Db, jwtSecret: string): RequestHandler {
+export function requireAuth(db: Db, jwtSecret: string, now: () => Date = () => new Date()): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
     const header = req.get('authorization') ?? '';
     const match = /^Bearer (.+)$/.exec(header);
-    const claims = match?.[1] ? verifyToken(match[1], jwtSecret) : null;
+    const claims = match?.[1] ? verifyToken(match[1], jwtSecret, now()) : null;
     if (!claims) return next(new HttpError(401, 'Please log in'));
 
     const user = await db.user.findUnique({ where: { id: claims.sub } });

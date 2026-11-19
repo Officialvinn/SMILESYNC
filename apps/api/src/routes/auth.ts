@@ -69,7 +69,7 @@ export function authRouter(db: Db, config: Config, now: () => Date): Router {
     res.json(body);
   });
 
-  const auth = requireAuth(db, config.JWT_SECRET);
+  const auth = requireAuth(db, config.JWT_SECRET, now);
 
   /** FR 1.1: the CHW app refreshes its token on each sync. */
   router.post('/refresh', auth, authorize(db, 'auth:refresh', { resourceType: 'user', audit: false }), (req, res) => {

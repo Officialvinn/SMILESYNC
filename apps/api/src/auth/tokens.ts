@@ -33,9 +33,14 @@ export function signToken(claims: TokenClaims, secret: string, now = new Date())
 }
 
 /** Returns the claims, or null for any invalid, expired or tampered token. */
-export function verifyToken(token: string, secret: string): TokenClaims | null {
+/** Checks expiry against `now`, the same clock signToken used, so the server has one notion of time. */
+export function verifyToken(token: string, secret: string, now = new Date()): TokenClaims | null {
   try {
-    const p = jwt.verify(token, secret, { algorithms: ['HS256'], issuer: 'smilesync-api' });
+    const p = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      issuer: 'smilesync-api',
+      clockTimestamp: Math.floor(now.getTime() / 1000),
+    });
     if (typeof p !== 'object' || typeof p.sub !== 'string' || typeof p.tv !== 'number') return null;
     if (!(ROLES as readonly string[]).includes(p.role)) return null;
     return { sub: p.sub, role: p.role as Role, tv: p.tv };
