@@ -9,7 +9,7 @@
  * file is never read. Each file is AES-256-GCM with the image id as
  * associated data.
  */
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { FieldCrypto } from '../security/fieldCrypto.js';
@@ -62,6 +62,34 @@ export class ImageStore {
     await mkdir(dirname(target), { recursive: true });
     await rename(this.incoming(uploaderId, imageId), target);
     return key;
+  }
+
+  /**
+   * NFR 6: deletes uploaded photos whose case never arrived, after the
+   * retention period. If the phone later retries, the server reports the
+   * photos missing and the phone uploads them again. Returns how many were deleted.
+   */
+  async purgeIncoming(olderThanMs: number, now: Date): Promise<number> {
+    const base = join(this.root, 'incoming');
+    let uploaders: string[];
+    try {
+      uploaders = await readdir(base);
+    } catch {
+      return 0; // nothing uploaded yet
+    }
+    let deleted = 0;
+    for (const uploader of uploaders) {
+      const dir = join(base, uploader);
+      for (const name of await readdir(dir).catch(() => [] as string[])) {
+        const path = join(dir, name);
+        const info = await stat(path).catch(() => null);
+        if (info?.isFile() && now.getTime() - info.mtimeMs > olderThanMs) {
+          await unlink(path).catch(() => undefined);
+          deleted += 1;
+        }
+      }
+    }
+    return deleted;
   }
 
   /** Writes an image straight into place (synthetic seed data only). */

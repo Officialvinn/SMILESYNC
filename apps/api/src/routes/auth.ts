@@ -12,6 +12,7 @@ import { hashSecret, verifySecret } from '../auth/passwords.js';
 import { signToken } from '../auth/tokens.js';
 import { HttpError } from '../http/errors.js';
 import { authorize, requireAuth } from '../http/auth.js';
+import { FailedLoginLimiter } from '../http/rateLimit.js';
 
 export const MAX_FAILED_LOGINS = 5;
 export const LOCKOUT_MS = 15 * 60_000;
@@ -21,15 +22,27 @@ export function authRouter(db: Db, config: Config, now: () => Date): Router {
   const router = Router();
   // Compared against when the username is unknown, so response time does not reveal which usernames exist.
   const dummyHash = hashSecret('not-a-real-password', config.BCRYPT_COST);
+  const limiter = new FailedLoginLimiter({
+    maxFailures: config.LOGIN_MAX_FAILURES_PER_IP,
+    windowMs: config.LOGIN_FAILURE_WINDOW_MINUTES * 60_000,
+  });
 
   router.post('/login', async (req, res) => {
     const { username, password } = loginRequestSchema.parse(req.body);
     const ip = req.ip;
+    const key = ip ?? 'unknown';
+    const wait = limiter.retryAfterMs(key, now().getTime());
+    if (wait > 0) {
+      await recordAudit(db, { userId: null, action: 'auth:login:rateLimited', outcome: 'DENIED', resourceType: 'user', resourceId: username, ipAddress: ip });
+      res.set('Retry-After', String(Math.ceil(wait / 1000)));
+      throw new HttpError(429, 'Too many failed logins from this network. Wait a few minutes and try again.');
+    }
     const user = await db.user.findUnique({ where: { username } });
 
     if (!user) {
       await verifySecret(password, await dummyHash);
       await recordAudit(db, { userId: null, action: 'auth:login', outcome: 'DENIED', resourceType: 'user', resourceId: username, ipAddress: ip });
+      limiter.recordFailure(key, now().getTime());
       throw new HttpError(401, INVALID);
     }
 
@@ -53,6 +66,7 @@ export function authRouter(db: Db, config: Config, now: () => Date): Router {
         });
       }
       await audit('DENIED', user.isActive ? 'auth:login' : 'auth:login:inactive');
+      limiter.recordFailure(key, now().getTime());
       throw new HttpError(401, INVALID);
     }
 

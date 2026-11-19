@@ -19,6 +19,11 @@ const configSchema = z.object({
   BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
   /** Where encrypted image files live (NFR 1). A Docker volume in docker-compose. */
   IMAGE_STORAGE_DIR: z.string().min(1).default('./storage'),
+  /** Failed logins allowed from one address within the window, across all accounts. */
+  LOGIN_MAX_FAILURES_PER_IP: z.coerce.number().int().min(1).default(30),
+  LOGIN_FAILURE_WINDOW_MINUTES: z.coerce.number().int().min(1).default(10),
+  /** Uploaded photos whose case never arrives are deleted after this many days (NFR 6). */
+  INCOMING_RETENTION_DAYS: z.coerce.number().int().min(1).default(7),
   /** Number of reverse proxies in front of the API (Caddy = 1), for client IPs in the audit log. */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
 });
