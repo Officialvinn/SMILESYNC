@@ -95,6 +95,21 @@ npm run dev:api        # http://localhost:3000
 See [apps/mobile/README.md](apps/mobile/README.md). Its core logic is tested with
 `npm test` like the rest of the repo, with no phone needed.
 
+## Back up and restore
+
+```sh
+scripts/backup.sh                              # database + encrypted photos, to backups/<time>
+scripts/verify-backup.sh backups/<time>        # proves it restores, without touching live data
+scripts/restore.sh backups/<time> --yes-replace-live-data
+```
+
+## Documents
+
+- `docs/USER_GUIDE.md`: for CHWs, dentists and administrators
+- `docs/FIELD_TEST.md`: checklist for a pilot
+- `docs/SECURITY_REVIEW.md`: what was checked and the open risks
+- `docs/TRACEABILITY.md`: every requirement mapped to code and tests
+
 ## Rules for contributors
 
 - Synthetic data only. Never use real patient data.
