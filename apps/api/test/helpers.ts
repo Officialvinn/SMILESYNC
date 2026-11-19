@@ -13,7 +13,7 @@ import { FieldCrypto } from '../src/security/fieldCrypto.js';
 
 export const TEST_JWT_SECRET = 'test-only-secret-not-used-anywhere-else-0123456789';
 
-export function testConfig(): Config {
+export function testConfig(overrides: Record<string, string> = {}): Config {
   return loadConfig({
     NODE_ENV: 'test',
     DATABASE_URL: inject('databaseUrl'),
@@ -23,11 +23,14 @@ export function testConfig(): Config {
     TRUST_PROXY_HOPS: '0',
     // Synthetic test images only; a fresh folder per test file.
     IMAGE_STORAGE_DIR: mkdtempSync(join(tmpdir(), 'smilesync-images-')),
+    // Generous by default: most tests log in many times from one address.
+    LOGIN_MAX_FAILURES_PER_IP: '1000',
+    ...overrides,
   });
 }
 
-export function makeHarness() {
-  const config = testConfig();
+export function makeHarness(overrides: Record<string, string> = {}) {
+  const config = testConfig(overrides);
   const db = createDb(config.DATABASE_URL);
   let current = new Date('2026-10-28T08:00:00.000Z');
   const clock = {
