@@ -38,12 +38,34 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  docker:
-    name: Build API image
+  e2e:
+    name: Stack and dashboard happy path
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f apps/api/Dockerfile --target runtime -t smilesync-api:ci .
-      - run: docker build -f apps/api/Dockerfile --target tools -t smilesync-migrate:ci .
-      - name: Validate docker-compose file
-        run: cp .env.example .env && sed -i 's/^\(POSTGRES_PASSWORD\|APP_DB_PASSWORD\|JWT_SECRET\|PATIENT_DATA_KEY\)=$/\1=ci-placeholder/' .env && docker compose config --quiet
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Throwaway secrets for this run only
+        run: |
+          node -e '
+            const c = require("crypto"), fs = require("fs");
+            const hex = (n) => c.randomBytes(n).toString("hex");
+            const v = { POSTGRES_PASSWORD: hex(16), APP_DB_PASSWORD: hex(16), JWT_SECRET: hex(32),
+              PATIENT_DATA_KEY: c.randomBytes(32).toString("base64"), SEED_PASSWORD: "Ci-" + hex(8),
+              SEED_CHW_PIN: String(c.randomInt(100000, 1000000)) };
+            let t = fs.readFileSync(".env.example", "utf8");
+            for (const [k, val] of Object.entries(v)) t = t.replace(new RegExp("^" + k + "=.*$", "m"), k + "=" + val);
+            fs.writeFileSync(".env", t);'
+      - name: Build and start the stack
+        run: docker compose up -d --build --wait
+      - name: Seed synthetic data
+        run: docker compose run --rm migrate npx tsx prisma/seed.ts
+      - run: npm ci --workspace @smilesync/shared --workspace @smilesync/web --include-workspace-root
+      - run: npx --workspace @smilesync/web playwright install --with-deps chromium
+      - name: Playwright
+        run: set -a && . ./.env && set +a && npm run e2e
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
