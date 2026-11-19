@@ -18,11 +18,11 @@ export const colors = {
 } as const;
 
 export const size = {
-  /** Minimum touch target, above the 48 dp platform guideline. */
-  touch: 60,
+  /** Minimum touch target, above the 48 dp platform guideline (NFR 3). */
+  touch: 56,
   gutter: 16,
   radius: 12,
-  text: 18,
-  small: 15,
-  title: 24,
+  text: 17,
+  small: 14,
+  title: 22,
 } as const;

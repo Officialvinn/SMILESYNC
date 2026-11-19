@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SYMPTOM_DURATIONS, type SymptomDuration } from '@smilesync/shared';
 import type { CaseRepo } from '../core/caseRepo';
-import { Banner, BigButton, Body, Choices, Screen, StepHeader, styles as ui } from '../ui/components';
+import { Actions, Banner, BigButton, Choices, Screen, StepHeader, styles as ui } from '../ui/components';
 import { DURATION_LABEL } from '../ui/labels';
 import { colors, size } from '../ui/theme';
 import { TOTAL_STEPS } from './ConsentScreen';
@@ -28,7 +28,7 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
   }, [repo, caseId, chwId]);
 
   async function save() {
-    if (pain === null || !duration) return setError('Choose a pain level and how long it has lasted.');
+    if (pain === null || !duration) return setError(pain === null ? 'Choose a pain level from 1 to 10.' : 'Choose how long it has lasted.');
     setBusy(true);
     setError(null);
     try {
@@ -42,7 +42,14 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
   }
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Actions hint="After saving, the case cannot be changed. It is sent when the phone has internet.">
+          <BigButton label="Back" kind="secondary" onPress={onBack} flex={1} />
+          <BigButton label="Save case" onPress={save} busy={busy} flex={2} />
+        </Actions>
+      }
+    >
       <StepHeader step={4} total={TOTAL_STEPS} title="Symptoms" />
       {error ? <Banner kind="error">{error}</Banner> : null}
       <View style={ui.field}>
@@ -75,15 +82,12 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
         value={duration}
         onChange={setDuration}
       />
-      <Body muted>After saving, the case cannot be changed. It is sent to the dentist when the phone has internet.</Body>
-      <BigButton label="Save case" onPress={save} busy={busy} disabled={pain === null || !duration} />
-      <BigButton label="Back to photos" kind="secondary" onPress={onBack} />
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   cell: {
     width: '17.5%',
     aspectRatio: 1,

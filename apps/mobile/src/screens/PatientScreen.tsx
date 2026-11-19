@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KENYA_COUNTIES, type Sex } from '@smilesync/shared';
 import type { CaseRepo } from '../core/caseRepo';
 import { buildPatient, type Consent, type FormErrors, type PatientForm } from '../core/registration';
-import { Banner, BigButton, Choices, Field, Screen, StepHeader, styles as ui } from '../ui/components';
+import { Actions, Banner, BigButton, Choices, Field, Screen, StepHeader, styles as ui } from '../ui/components';
 import { colors, size } from '../ui/theme';
 import { TOTAL_STEPS } from './ConsentScreen';
 
@@ -47,9 +47,16 @@ export function PatientScreen(props: {
   }
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Actions>
+          <BigButton label="Cancel" kind="secondary" onPress={onCancel} hint="Nothing is saved" flex={1} />
+          <BigButton label="Next: photos" onPress={save} busy={busy} flex={2} />
+        </Actions>
+      }
+    >
       <StepHeader step={2} total={TOTAL_STEPS} title="Patient details" />
-      <Banner kind="ok">Consent recorded at {new Date(consent.consentDate).toLocaleTimeString()}.</Banner>
+      <Text style={s.consent}>Consent recorded at {new Date(consent.consentDate).toLocaleTimeString()}</Text>
       {failure ? <Banner kind="error">{failure}</Banner> : null}
       <Field label="Full name" value={form.name} onChangeText={set('name')} error={errors.name} autoCapitalize="words" autoCorrect={false} />
       <Field
@@ -73,8 +80,6 @@ export function PatientScreen(props: {
         {errors.location ? <Text style={ui.error}>{errors.location}</Text> : null}
       </View>
       <Choices label="Sex (optional)" options={SEX_OPTIONS} value={form.sex as Sex | ''} onChange={set('sex')} allowClear />
-      <BigButton label="Save and take photos" onPress={save} busy={busy} />
-      <BigButton label="Cancel" kind="secondary" onPress={onCancel} hint="Nothing is saved" />
       <CountyPicker
         visible={picking}
         onClose={() => setPicking(false)}
@@ -114,6 +119,7 @@ function CountyPicker({ visible, onClose, onPick }: { visible: boolean; onClose:
 }
 
 const s = StyleSheet.create({
+  consent: { fontSize: size.small, color: colors.primary, fontWeight: '600' },
   picker: { justifyContent: 'center' },
   pickerText: { fontSize: size.text + 2, color: colors.text },
   row: { minHeight: size.touch, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },

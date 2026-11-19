@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { CaseListItem, CaseRepo } from '../core/caseRepo';
 import type { Session } from '../core/offlineAuth';
 import type { SyncState } from '../platform/sync';
-import { Banner, BigButton, Body, Screen, Title } from '../ui/components';
+import { Actions, Banner, BigButton, Body, Screen, TextButton, Title } from '../ui/components';
 import { PRIORITY_COLOR, statusLine } from '../ui/labels';
 import { colors, size } from '../ui/theme';
 
@@ -27,32 +27,55 @@ export function HomeScreen(props: {
   }, [load, sync.version]);
 
   const waiting = cases?.filter((c) => !c.isDraft && c.status === 'PENDING' && !c.needsAttention).length ?? 0;
+  const sent = cases?.filter((c) => c.status === 'SYNCED').length ?? 0;
+  const replied = cases?.filter((c) => c.status === 'REVIEWED').length ?? 0;
+  const empty = cases?.length === 0;
+  const newPatient = <BigButton label="New patient" onPress={onNewPatient} hint="Starts consent, then patient details and photos" />;
 
   return (
-    <Screen>
-      <Title>Hello, {session.user.username}</Title>
+    <Screen footer={empty ? undefined : <Actions>{newPatient}</Actions>}>
+      <View style={s.top}>
+        <Title>Hello, {session.user.username}</Title>
+        <TextButton label="Log out" onPress={onLogout} />
+      </View>
       {sync.last?.authRequired ? (
         <View style={{ gap: 10 }}>
           <Banner kind="error">Your login has expired. Log in again with internet to send cases. Nothing is lost.</Banner>
           <BigButton label="Log in again" kind="secondary" onPress={onLoginAgain} />
         </View>
       ) : !sync.online ? (
-        <Banner kind="warn">No internet. You can keep working; cases are sent automatically when you are back online.</Banner>
+        <Banner kind="warn">
+          No internet.{' '}
+          {waiting > 0
+            ? `${waiting} saved ${waiting === 1 ? 'case' : 'cases'} will be sent automatically when you are back online.`
+            : 'You can keep working; cases are sent when you are back online.'}
+        </Banner>
       ) : null}
-      {waiting > 0 ? (
+      {waiting > 0 && sync.online ? (
         <BigButton
           label={sync.running ? 'Sending…' : `Send now (${waiting} waiting)`}
           kind="secondary"
           busy={sync.running}
-          disabled={!sync.online}
           onPress={onSendNow}
         />
       ) : null}
-      <BigButton label="New patient" onPress={onNewPatient} hint="Starts consent, then patient details and photos" />
 
-      <Text style={s.heading}>Cases on this phone</Text>
+      {cases && !empty ? (
+        <View style={s.stats} accessibilityRole="summary">
+          <Stat value={waiting} label="Waiting to send" />
+          <Stat value={sent} label="With dentist" />
+          <Stat value={replied} label="Dentist replied" />
+        </View>
+      ) : null}
       {cases === null ? <Body muted>Loading…</Body> : null}
-      {cases?.length === 0 ? <Body muted>No cases yet.</Body> : null}
+      {empty ? (
+        <View style={s.empty}>
+          <Text style={s.emptyTitle}>No cases on this phone yet</Text>
+          <Body muted>Start with consent, then the patient's details, three photos and two symptom questions. It takes about 5 minutes.</Body>
+          <View style={s.emptyAction}>{newPatient}</View>
+        </View>
+      ) : null}
+      {cases && !empty ? <Text style={s.heading}>Cases on this phone</Text> : null}
       {cases?.map((c) => (
         <Pressable
           key={c.id}
@@ -78,21 +101,36 @@ export function HomeScreen(props: {
         </Pressable>
       ))}
 
-      <View style={{ height: 12 }} />
-      <BigButton label="Log out" kind="secondary" onPress={onLogout} />
     </Screen>
   );
 }
 
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={s.stat}>
+      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
-  heading: { fontSize: size.text + 2, fontWeight: '700', color: colors.text, marginTop: 8 },
+  stats: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: size.radius, borderWidth: 1, borderColor: colors.border, paddingVertical: 8, paddingHorizontal: 10 },
+  statValue: { fontSize: size.title, fontWeight: '800', color: colors.text },
+  statLabel: { fontSize: size.small - 1, color: colors.muted },
+  empty: { marginTop: 40, gap: 10, backgroundColor: colors.surface, borderRadius: size.radius, borderWidth: 1, borderColor: colors.border, padding: 16 },
+  emptyTitle: { fontSize: size.text + 2, fontWeight: '700', color: colors.text },
+  emptyAction: { flexDirection: 'row', marginTop: 4 },
+  top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heading: { fontSize: size.text + 1, fontWeight: '700', color: colors.text, marginTop: 4 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: size.radius,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    gap: 6,
+    padding: 12,
+    gap: 4,
     minHeight: size.touch,
   },
   name: { fontSize: size.text + 1, fontWeight: '700', color: colors.text },

@@ -4,14 +4,21 @@
  */
 import { StyleSheet, Text, View } from 'react-native';
 import { CONSENT_POINTS } from '../core/registration';
-import { BigButton, Body, Screen, StepHeader } from '../ui/components';
+import { Actions, BigButton, Body, Screen, StepHeader } from '../ui/components';
 import { colors, size } from '../ui/theme';
 
 export const TOTAL_STEPS = 4;
 
 export function ConsentScreen({ onAgree, onRefuse }: { onAgree: () => void; onRefuse: () => void }) {
   return (
-    <Screen>
+    <Screen
+      footer={
+        <Actions hint="Does the patient agree?">
+          <BigButton label="No" kind="danger" onPress={onRefuse} hint="Nothing is saved" flex={1} />
+          <BigButton label="Yes, agrees" onPress={onAgree} flex={2} />
+        </Actions>
+      }
+    >
       <StepHeader step={1} total={TOTAL_STEPS} title="Ask for consent" />
       <Body>Read this to the patient. For a child under 18, ask the parent or guardian.</Body>
       <View style={s.box}>
@@ -22,16 +29,13 @@ export function ConsentScreen({ onAgree, onRefuse }: { onAgree: () => void; onRe
           </View>
         ))}
       </View>
-      <Body>Does the patient agree?</Body>
-      <BigButton label="Yes, the patient agrees" onPress={onAgree} />
-      <BigButton label="No, the patient does not agree" kind="danger" onPress={onRefuse} hint="Nothing is saved" />
     </Screen>
   );
 }
 
 const s = StyleSheet.create({
-  box: { backgroundColor: colors.surface, borderRadius: size.radius, borderWidth: 1, borderColor: colors.border, padding: 14, gap: 10 },
+  box: { backgroundColor: colors.surface, borderRadius: size.radius, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 8 },
   point: { flexDirection: 'row', gap: 8 },
-  bullet: { fontSize: size.text, lineHeight: 26, color: colors.text },
-  text: { flex: 1, fontSize: size.text, lineHeight: 26, color: colors.text },
+  bullet: { fontSize: size.text, lineHeight: 24, color: colors.text },
+  text: { flex: 1, fontSize: size.text, lineHeight: 24, color: colors.text },
 });

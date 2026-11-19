@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import type { CaseDetail, CaseRepo } from '../core/caseRepo';
 import { VIEW_GUIDANCE } from '../core/capturePlan';
-import { Banner, BigButton, Body, Screen, Title } from '../ui/components';
+import { Actions, Banner, BigButton, Body, Screen, TextButton, Title } from '../ui/components';
 import { DURATION_LABEL, PRIORITY_COLOR, PRIORITY_LABEL } from '../ui/labels';
 import { Thumbnail } from '../ui/Thumbnail';
 import { colors, size } from '../ui/theme';
@@ -44,8 +44,17 @@ export function CaseScreen(props: {
   }
 
   const p = c.patient;
+  const footer = (
+    <Actions>
+      {c.isDraft ? (
+        <BigButton label={c.assessment ? 'Review symptoms and save' : 'Next: symptoms'} onPress={onSymptoms} />
+      ) : (
+        <BigButton label="Back to cases" onPress={onHome} />
+      )}
+    </Actions>
+  );
   return (
-    <Screen>
+    <Screen footer={footer}>
       <Title>Case {p.anonId}</Title>
       <View style={s.card}>
         <Text style={s.name}>{p.name}</Text>
@@ -72,13 +81,12 @@ export function CaseScreen(props: {
       </View>
 
       {c.isDraft ? (
-        <>
-          <BigButton label={c.assessment ? 'Review symptoms and save' : 'Answer symptom questions'} onPress={onSymptoms} />
-          <BigButton label="Change photos" kind="secondary" onPress={onEditPhotos} />
-        </>
+        <View style={s.links}>
+          <TextButton label="Change photos" onPress={onEditPhotos} />
+          <TextButton label="Back to cases" onPress={onHome} />
+          <TextButton label="Delete case (consent withdrawn)" onPress={confirmDiscard} danger />
+        </View>
       ) : null}
-      <BigButton label="Home" kind={c.isDraft ? 'secondary' : 'primary'} onPress={onHome} />
-      {c.isDraft ? <BigButton label="Delete case (consent withdrawn)" kind="danger" onPress={confirmDiscard} /> : null}
     </Screen>
   );
 }
@@ -125,7 +133,8 @@ function StatusPanel({ c, onSendNow }: { c: CaseDetail; onSendNow: () => void })
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: size.radius, padding: 14, gap: 4, borderWidth: 1, borderColor: colors.border },
+  links: { gap: 0 },
+  card: { backgroundColor: colors.surface, borderRadius: size.radius, padding: 12, gap: 2, borderWidth: 1, borderColor: colors.border },
   name: { fontSize: size.title - 2, fontWeight: '700', color: colors.text },
   meta: { fontSize: size.small, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
