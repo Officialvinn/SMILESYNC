@@ -8,8 +8,9 @@ docs
 # Apps the server image does not need, except their manifests (the lockfile lists them)
 apps/mobile/*
 !apps/mobile/package.json
-apps/web/*
-!apps/web/package.json
+apps/web/dist
+apps/web/test-results
+apps/web/playwright-report
 # Local secrets, certificates and image storage
 caddy-root.crt
 /apps/api/storage
