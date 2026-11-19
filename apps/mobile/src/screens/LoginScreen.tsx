@@ -1,6 +1,6 @@
 /** FR 1.1: username and 6-digit PIN. Works offline after the first online login. */
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Banner, BigButton, Field } from '../ui/components';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, size } from '../ui/theme';
@@ -33,6 +33,9 @@ export function LoginScreen({ auth, onLoggedIn }: { auth: AuthService; onLoggedI
 
   return (
     <SafeAreaView style={s.screen}>
+      {/* The keyboard must never hide the Log in button. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
       <View style={s.block}>
         <View style={s.brand}>
           <View style={s.mark}>
@@ -67,12 +70,15 @@ export function LoginScreen({ auth, onLoggedIn }: { auth: AuthService; onLoggedI
         <BigButton label="Log in" onPress={submit} busy={busy} />
         <Text style={s.note}>The first login on this phone needs internet. After that you can log in without it.</Text>
       </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 16 },
   block: { paddingHorizontal: size.gutter, gap: 12 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   mark: { width: 52, height: 52, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, size } from './theme';
 
@@ -16,13 +16,16 @@ export function Screen({ children, footer, scroll = true }: { children: ReactNod
   );
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {body}
-        </ScrollView>
-      ) : (
-        <View style={[styles.content, { flex: 1 }]}>{body}</View>
-      )}
+      {/* The keyboard must never hide a field or the next button. */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+        {scroll ? (
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {body}
+          </ScrollView>
+        ) : (
+          <View style={[styles.content, { flex: 1 }]}>{body}</View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
