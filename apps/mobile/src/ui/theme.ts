@@ -8,6 +8,8 @@ export const colors = {
   text: '#1B1F23',
   muted: '#5A636B',
   border: '#C9CED3',
+  /** Disabled buttons: light enough that their muted label still reads in sunlight. */
+  disabledBg: '#E8EBEE',
   primary: '#0B6E4F',
   primaryText: '#FFFFFF',
   danger: '#B42318',

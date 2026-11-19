@@ -71,7 +71,7 @@ test('dentist triages a case from the queue; the CHW gets the result; admin sees
   await row.getByRole('link', { name: anonId }).click();
   await expect(page.getByRole('heading', { name: `Case ${anonId}` })).toBeVisible();
   await expect(page.getByText(NAME)).toHaveCount(0);
-  const front = page.getByRole('button', { name: 'Open Front, teeth together photo' });
+  const front = page.getByRole('button', { name: /^Front, teeth together/ });
   await expect(front).toBeEnabled();
   await expect(front.locator('img')).toHaveAttribute('src', /^blob:/);
   await front.click();

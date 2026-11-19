@@ -63,7 +63,7 @@ jobs:
       - name: Seed synthetic data
         run: docker compose run --rm migrate npx tsx prisma/seed.ts
       - run: npm ci --workspace @smilesync/shared --workspace @smilesync/web --include-workspace-root
-      - run: npx --workspace @smilesync/web playwright install --with-deps chromium
+      - run: npx --workspace @smilesync/web playwright install --with-deps chromium webkit
       - name: Playwright
         run: set -a && . ./.env && set +a && npm run e2e
       - name: Logs on failure

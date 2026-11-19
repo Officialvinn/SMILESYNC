@@ -96,7 +96,7 @@ export function CasePage({ id }: { id: string }) {
         <section aria-label="Photos" className="photos">
           <div className="photo-grid">
             {c.images.map((img, i) => (
-              <button type="button" key={img.id} className="photo" onClick={() => setViewing(i)} disabled={!photos[i]} aria-label={`Open ${VIEW[img.viewType]} photo full screen`}>
+              <button type="button" key={img.id} className="photo" onClick={() => setViewing(i)} disabled={!photos[i]}>
                 {photos[i] ? <img src={photos[i]!.url} alt="" /> : <span className="muted">Loading…</span>}
                 <span className="photo-label">{VIEW[img.viewType]} · click to zoom</span>
               </button>
