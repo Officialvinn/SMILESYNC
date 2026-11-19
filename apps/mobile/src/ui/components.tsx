@@ -209,7 +209,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 2,
   },
-  buttonOff: { backgroundColor: colors.border, borderColor: colors.border },
+  buttonOff: { backgroundColor: colors.disabledBg, borderColor: colors.disabledBg },
   buttonText: { fontSize: size.text, fontWeight: '700', color: colors.primaryText, textAlign: 'center' },
   buttonTextOff: { color: colors.muted },
   textButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },

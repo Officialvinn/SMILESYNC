@@ -16,5 +16,9 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // NFR 5: Safari's engine. The happy path only; axe and throttling run in Chromium.
+    { name: 'webkit', use: { ...devices['Desktop Safari'] }, testMatch: 'dentist.spec.ts' },
+  ],
 });
