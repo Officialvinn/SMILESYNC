@@ -85,14 +85,13 @@ export default function App() {
   let screen;
   if (fatal) {
     screen = (
-      <Screen>
-        <Title>Cannot open saved data</Title>
+      <Screen header={<Title>Cannot open saved data</Title>}>
         <Banner kind="error">{fatal}</Banner>
         <Body>Do not uninstall the app: saved cases may still be recoverable. Contact your supervisor.</Body>
       </Screen>
     );
   } else if (!repo) {
-    screen = <Screen><Body muted>Opening…</Body></Screen>;
+    screen = <Screen header={<Title>SmileSync</Title>}><Body muted>Opening…</Body></Screen>;
   } else if (!session) {
     screen = (
       <LoginScreen

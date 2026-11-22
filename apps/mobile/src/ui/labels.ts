@@ -14,10 +14,11 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
   EMERGENCY: 'Emergency',
 };
 
+/** From the brand palette: deep teal, the smile's amber (darkened for white text), red. */
 export const PRIORITY_COLOR: Record<Priority, string> = {
-  ROUTINE: '#0B6E4F',
-  URGENT: '#9A5B00',
-  EMERGENCY: '#B42318',
+  ROUTINE: '#0B7A72',
+  URGENT: '#9A5200',
+  EMERGENCY: '#B3261E',
 };
 
 /** FR 5.3: one plain status line per case. */

@@ -58,7 +58,7 @@ export function App() {
     <div className="shell">
       <header className="topbar">
         <a className="brand" href={href(role === 'ADMIN' ? { page: 'users' } : { page: 'queue' })}>
-          SmileSync
+          <img src="/logo-mark.png" alt="SmileSync home" />
         </a>
         <nav aria-label="Main">
           {role === 'DENTIST' ? (
@@ -78,10 +78,10 @@ export function App() {
         </nav>
         <span className="who">
           {session.user.username} · {role === 'DENTIST' ? 'Dentist' : 'Administrator'}
+          <button type="button" className="link" onClick={() => logout()}>
+            Log out
+          </button>
         </span>
-        <button type="button" className="link" onClick={() => logout()}>
-          Log out
-        </button>
       </header>
       <main>
         {role === 'DENTIST' && route.page === 'case' ? <CasePage id={route.id} /> : null}
@@ -117,9 +117,10 @@ function Login({ notice, onLogin }: { notice: string | null; onLogin: (s: LoginR
 
   return (
     <main className="login">
+      <img className="lockup" src="/logo-lockup.png" alt="SmileSync" />
+      <p className="tagline">Dental triage for community health workers</p>
       <form onSubmit={submit} className="card" aria-labelledby="login-title">
-        <h1 id="login-title">SmileSync</h1>
-        <p className="muted">Dentist and administrator dashboard</p>
+        <h1 id="login-title">Dentist and administrator login</h1>
         {notice ? <p className="banner warn">{notice}</p> : null}
         {error ? (
           <p className="banner error" role="alert">

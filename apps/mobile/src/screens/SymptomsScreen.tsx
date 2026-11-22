@@ -43,6 +43,7 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
 
   return (
     <Screen
+      header={<StepHeader step={4} total={TOTAL_STEPS} title="Symptoms" />}
       footer={
         <Actions hint="After saving, the case cannot be changed. It is sent when the phone has internet.">
           <BigButton label="Back" kind="secondary" onPress={onBack} flex={1} />
@@ -50,7 +51,6 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
         </Actions>
       }
     >
-      <StepHeader step={4} total={TOTAL_STEPS} title="Symptoms" />
       {error ? <Banner kind="error">{error}</Banner> : null}
       <View style={ui.field}>
         <Text style={ui.label}>How bad is the pain? Ask the patient to choose 1 to 10.</Text>
@@ -87,7 +87,7 @@ export function SymptomsScreen(props: { caseId: string; chwId: string; repo: Cas
 }
 
 const s = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
   cell: {
     width: '17.5%',
     aspectRatio: 1,

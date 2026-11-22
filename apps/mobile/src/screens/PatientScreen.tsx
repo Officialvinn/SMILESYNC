@@ -48,6 +48,7 @@ export function PatientScreen(props: {
 
   return (
     <Screen
+      header={<StepHeader step={2} total={TOTAL_STEPS} title="Patient details" />}
       footer={
         <Actions>
           <BigButton label="Cancel" kind="secondary" onPress={onCancel} hint="Nothing is saved" flex={1} />
@@ -55,7 +56,6 @@ export function PatientScreen(props: {
         </Actions>
       }
     >
-      <StepHeader step={2} total={TOTAL_STEPS} title="Patient details" />
       <Text style={s.consent}>Consent recorded at {new Date(consent.consentDate).toLocaleTimeString()}</Text>
       {failure ? <Banner kind="error">{failure}</Banner> : null}
       <Field label="Full name" value={form.name} onChangeText={set('name')} error={errors.name} autoCapitalize="words" autoCorrect={false} />
@@ -119,8 +119,8 @@ function CountyPicker({ visible, onClose, onPick }: { visible: boolean; onClose:
 }
 
 const s = StyleSheet.create({
-  consent: { fontSize: size.small, color: colors.primary, fontWeight: '600' },
-  picker: { justifyContent: 'center' },
-  pickerText: { fontSize: size.text + 2, color: colors.text },
-  row: { minHeight: size.touch, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  consent: { fontSize: size.small, color: colors.primary, fontWeight: '700', textAlign: 'center' },
+  picker: { justifyContent: 'center', alignItems: 'center' },
+  pickerText: { fontSize: size.text + 2, color: colors.text, textAlign: 'center' },
+  row: { minHeight: size.touch, justifyContent: 'center', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
 });

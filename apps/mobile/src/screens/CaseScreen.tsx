@@ -29,8 +29,8 @@ export function CaseScreen(props: {
     void repo.getCase(caseId, chwId).then(setCase);
   }, [repo, caseId, chwId, version]);
 
-  if (c === undefined) return <Screen><Body muted>Loading…</Body></Screen>;
-  if (c === null) return <Screen><Body>Case not found.</Body><BigButton label="Home" onPress={onHome} /></Screen>;
+  if (c === undefined) return <Screen header={<Title>Case</Title>}><Body muted>Loading…</Body></Screen>;
+  if (c === null) return <Screen header={<Title>Case</Title>} footer={<Actions><BigButton label="Back to cases" onPress={onHome} /></Actions>}><Body>Case not found.</Body></Screen>;
 
   function confirmDiscard() {
     Alert.alert(
@@ -54,8 +54,7 @@ export function CaseScreen(props: {
     </Actions>
   );
   return (
-    <Screen footer={footer}>
-      <Title>Case {p.anonId}</Title>
+    <Screen footer={footer} header={<Title subtitle={c.isDraft ? 'Not finished' : undefined}>Case {p.anonId}</Title>}>
       <View style={s.card}>
         <Text style={s.name}>{p.name}</Text>
         <Text style={s.meta}>
@@ -106,7 +105,7 @@ function StatusPanel({ c, onSendNow }: { c: CaseDetail; onSendNow: () => void })
             {c.sync.nextAttemptAt ? ` Next try: ${new Date(c.sync.nextAttemptAt).toLocaleTimeString()}.` : ''}
           </Banner>
         )}
-        {!c.sync.needsAttention ? <BigButton label="Send now" kind="secondary" onPress={onSendNow} /> : null}
+        {!c.sync.needsAttention ? <View style={{ flexDirection: 'row' }}><BigButton label="Send now" kind="secondary" onPress={onSendNow} /></View> : null}
       </View>
     );
   }
@@ -122,7 +121,7 @@ function StatusPanel({ c, onSendNow }: { c: CaseDetail; onSendNow: () => void })
       <Text style={s.resultLabel}>Dentist's priority</Text>
       <Text style={[s.priority, pr ? { color: PRIORITY_COLOR[pr] } : null]}>{pr ? PRIORITY_LABEL[pr] : 'Reviewed'}</Text>
       {c.triage.notes.map((n) => (
-        <View key={n.id} style={{ gap: 4 }}>
+        <View key={n.id} style={{ gap: 4, alignItems: 'center' }}>
           <Text style={s.note}>{n.noteText}</Text>
           {n.referralAdvice ? <Text style={s.note}>Referral: {n.referralAdvice}</Text> : null}
         </View>
@@ -133,15 +132,15 @@ function StatusPanel({ c, onSendNow }: { c: CaseDetail; onSendNow: () => void })
 }
 
 const s = StyleSheet.create({
-  links: { gap: 0 },
-  card: { backgroundColor: colors.surface, borderRadius: size.radius, padding: 12, gap: 2, borderWidth: 1, borderColor: colors.border },
-  name: { fontSize: size.title - 2, fontWeight: '700', color: colors.text },
-  meta: { fontSize: size.small, color: colors.muted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  links: { gap: 0, alignItems: 'center' },
+  card: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: size.radius + 6, padding: 16, gap: 3 },
+  name: { fontSize: size.title, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  meta: { fontSize: size.small, color: colors.muted, textAlign: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
   cell: { alignItems: 'center', gap: 4, width: 96 },
   caption: { fontSize: size.small - 2, color: colors.text, textAlign: 'center' },
-  result: { backgroundColor: colors.surface, borderRadius: size.radius, borderWidth: 3, borderColor: colors.border, padding: 14, gap: 8 },
-  resultLabel: { fontSize: size.small, color: colors.muted, fontWeight: '600' },
-  priority: { fontSize: size.title + 4, fontWeight: '800', color: colors.text },
-  note: { fontSize: size.text, lineHeight: 26, color: colors.text },
+  result: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: size.radius + 6, borderWidth: 3, borderColor: colors.border, padding: 18, gap: 8 },
+  resultLabel: { fontSize: size.small, color: colors.muted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+  priority: { fontSize: size.title + 8, fontWeight: '800', color: colors.text, textAlign: 'center' },
+  note: { fontSize: size.text, lineHeight: 26, color: colors.text, textAlign: 'center' },
 });

@@ -32,6 +32,11 @@ const PAIRS: [string, string, string][] = [
   ['error banner', colors.text, colors.errorBg],
   ['ok banner and tips', colors.text, colors.okBg],
   ['muted text on disabled button', colors.muted, colors.disabledBg],
+  ['navy text on teal action buttons', colors.actionText, colors.action],
+  ['titles on the navy band', colors.onNavy, colors.navy],
+  ['secondary text on the navy band', colors.onNavyMuted, colors.navy],
+  ['amber step label on navy', colors.accent, colors.navy],
+  ['muted text on the warm banner', colors.muted, colors.warnBg],
   ...(Object.entries(PRIORITY_COLOR).map(([p, c]) => [`white on ${p} badge`, '#FFFFFF', c]) as [string, string, string][]),
 ];
 

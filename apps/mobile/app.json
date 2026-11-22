@@ -29,7 +29,11 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F1D40"
+      }
     },
     "plugins": [
       [
@@ -49,6 +53,12 @@
       "expo-secure-store",
       "expo-dev-client",
       "./plugins/withNetworkSecurity"
-    ]
+    ],
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#0F1D40",
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#0F1D40"
+    }
   }
 }
