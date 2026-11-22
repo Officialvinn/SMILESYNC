@@ -198,3 +198,6 @@ td.empty { color: var(--muted); padding: 28px; }
 .form-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .form-row label { flex: 1 1 220px; }
 .form-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* Notes under a page head are centred with it. */
+.page-head + p { text-align: center; }
