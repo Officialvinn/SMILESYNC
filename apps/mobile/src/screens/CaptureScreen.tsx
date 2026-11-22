@@ -185,51 +185,56 @@ function CameraStep({ view, onTaken, onCancel }: { view: ViewType; onTaken: (p: 
     }
   }
 
+  // The preview is shown at the photo's own 3:4 shape (portrait 4:3 sensor), so what
+  // the CHW sees is what the photo contains: no cropping that looks like zoom.
   return (
-    <View style={s.dark}>
-      <CameraView
-        ref={camera}
-        style={StyleSheet.absoluteFill}
-        facing="back"
-        enableTorch={torch}
-        autofocus="on"
-        onCameraReady={() => setReady(true)}
-      />
-      <SafeAreaView style={s.overlay} edges={['top', 'bottom']}>
-        <View style={s.guideBox} accessibilityRole="summary">
-          <Text style={s.darkTitle}>{guide.title}</Text>
-          {[...guide.steps, ...GENERAL_TIPS].map((t) => (
-            <Text key={t} style={s.darkText}>
-              {t}
-            </Text>
-          ))}
-        </View>
+    <SafeAreaView style={s.cameraScreen} edges={['top', 'bottom']}>
+      <View style={s.guideBox} accessibilityRole="summary">
+        <Text style={s.darkTitle}>{guide.title}</Text>
+        {guide.steps.map((t) => (
+          <Text key={t} style={s.darkText}>
+            {t}
+          </Text>
+        ))}
+        <Text style={s.tipText}>{GENERAL_TIPS.join(' ')}</Text>
+      </View>
+      <View style={s.previewBox}>
+        <CameraView
+          ref={camera}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          ratio="4:3"
+          zoom={0}
+          enableTorch={torch}
+          autofocus="on"
+          onCameraReady={() => setReady(true)}
+        />
         <View style={s.frame} pointerEvents="none" />
-        <View style={s.controls}>
-          <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel="Back" style={s.sideButton}>
-            <Text style={s.sideText}>Back</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => void take()}
-            disabled={!ready || taking}
-            accessibilityRole="button"
-            accessibilityLabel={`Take photo: ${guide.title}`}
-            style={[s.shutter, (!ready || taking) && { opacity: 0.5 }]}
-          >
-            <View style={s.shutterInner} />
-          </Pressable>
-          <Pressable
-            onPress={() => setTorch((t) => !t)}
-            accessibilityRole="switch"
-            accessibilityState={{ checked: torch }}
-            accessibilityLabel="Light"
-            style={s.sideButton}
-          >
-            <Text style={s.sideText}>{torch ? 'Light on' : 'Light off'}</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    </View>
+      </View>
+      <View style={s.controls}>
+        <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel="Back" style={s.sideButton}>
+          <Text style={s.sideText}>Back</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => void take()}
+          disabled={!ready || taking}
+          accessibilityRole="button"
+          accessibilityLabel={`Take photo: ${guide.title}`}
+          style={[s.shutter, (!ready || taking) && { opacity: 0.5 }]}
+        >
+          <View style={s.shutterInner} />
+        </Pressable>
+        <Pressable
+          onPress={() => setTorch((t) => !t)}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: torch }}
+          accessibilityLabel="Light"
+          style={s.sideButton}
+        >
+          <Text style={s.sideText}>{torch ? 'Light on' : 'Light off'}</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -239,8 +244,10 @@ const s = StyleSheet.create({
   darkText: { color: '#fff', fontSize: size.text - 1, lineHeight: 24, textAlign: 'center' },
   preview: { flex: 1, width: '100%' },
   row: { flexDirection: 'row', gap: 12 },
-  overlay: { flex: 1, justifyContent: 'space-between' },
-  guideBox: { backgroundColor: 'rgba(15,29,64,0.82)', borderRadius: size.radius + 4, padding: 14, gap: 6, alignItems: 'center' },
+  cameraScreen: { flex: 1, backgroundColor: colors.navy, paddingHorizontal: size.gutter, paddingVertical: 8, gap: 12, justifyContent: 'center' },
+  previewBox: { width: '100%', maxWidth: size.column, aspectRatio: 3 / 4, alignSelf: 'center', borderRadius: 22, overflow: 'hidden', backgroundColor: '#000', justifyContent: 'center' },
+  tipText: { color: colors.onNavyMuted, fontSize: size.small, lineHeight: 20, textAlign: 'center' },
+  guideBox: { gap: 4, alignItems: 'center', width: '100%', maxWidth: size.column, alignSelf: 'center' },
   frame: {
     alignSelf: 'center',
     width: '86%',
@@ -250,12 +257,12 @@ const s = StyleSheet.create({
     borderRadius: 24,
     borderStyle: 'dashed',
   },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 8 },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: size.column, alignSelf: 'center' },
   sideButton: {
     minWidth: 96,
     minHeight: size.touch,
     borderRadius: size.radius,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: colors.navySoft,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,

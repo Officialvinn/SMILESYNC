@@ -253,7 +253,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: size.gutter,
     paddingTop: 22,
   },
-  column: { width: '100%', maxWidth: size.column, alignSelf: 'center', gap: 14 },
+  /** Centred both ways: content sits in the middle of the sheet when it is shorter than the screen. */
+  column: { width: '100%', maxWidth: size.column, alignSelf: 'center', gap: 14, flexGrow: 1, justifyContent: 'center' },
   footer: { marginTop: 4 },
   actions: { gap: 6 },
   actionRow: { flexDirection: 'row', gap: 10 },
