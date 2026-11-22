@@ -200,7 +200,7 @@ function CameraStep({ view, onTaken, onCancel }: { view: ViewType; onTaken: (p: 
           <Text style={s.darkTitle}>{guide.title}</Text>
           {[...guide.steps, ...GENERAL_TIPS].map((t) => (
             <Text key={t} style={s.darkText}>
-              • {t}
+              {t}
             </Text>
           ))}
         </View>
@@ -235,12 +235,12 @@ function CameraStep({ view, onTaken, onCancel }: { view: ViewType; onTaken: (p: 
 
 const s = StyleSheet.create({
   dark: { flex: 1, backgroundColor: colors.navy, padding: size.gutter, gap: 12 },
-  darkTitle: { color: '#fff', fontSize: size.title - 2, fontWeight: '700' },
-  darkText: { color: '#fff', fontSize: size.text - 1, lineHeight: 24 },
+  darkTitle: { color: '#fff', fontSize: size.title - 2, fontWeight: '800', textAlign: 'center' },
+  darkText: { color: '#fff', fontSize: size.text - 1, lineHeight: 24, textAlign: 'center' },
   preview: { flex: 1, width: '100%' },
   row: { flexDirection: 'row', gap: 12 },
   overlay: { flex: 1, justifyContent: 'space-between' },
-  guideBox: { backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: size.radius, padding: 12, gap: 4 },
+  guideBox: { backgroundColor: 'rgba(15,29,64,0.82)', borderRadius: size.radius + 4, padding: 14, gap: 6, alignItems: 'center' },
   frame: {
     alignSelf: 'center',
     width: '86%',
