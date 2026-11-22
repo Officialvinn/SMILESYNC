@@ -10,7 +10,8 @@
     "android": "expo run:android",
     "prebuild": "expo prebuild --clean",
     "typecheck": "npm run build -w @smilesync/shared && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:android": "./build-release.sh"
   },
   "dependencies": {
     "@react-native-community/netinfo": "12.0.1",

@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "org.smilesync.chw",
+      "versionCode": 1,
       "allowBackup": false,
       "permissions": [
         "android.permission.CAMERA"
@@ -52,7 +53,8 @@
       ],
       "expo-secure-store",
       "expo-dev-client",
-      "./plugins/withNetworkSecurity"
+      "./plugins/withNetworkSecurity",
+      "./plugins/withReleaseSigning"
     ],
     "icon": "./assets/icon.png",
     "backgroundColor": "#0F1D40",
