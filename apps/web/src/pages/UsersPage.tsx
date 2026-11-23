@@ -159,8 +159,16 @@ function CreateUser({ onCreated, onCancel }: { onCreated: (u: UserSummary) => vo
             </select>
           </label>
           <label>
-            Username
-            <input value={f.username} onChange={set('username')} required autoComplete="off" placeholder="e.g. chw.kajiado1" />
+            Username (no spaces)
+            <input
+              value={f.username}
+              onChange={set('username')}
+              required
+              autoComplete="off"
+              placeholder="e.g. dr.alvin or chw.kajiado1"
+              pattern="[A-Za-z0-9._\-]{3,64}"
+              title="3-64 letters, digits, dot, dash or underscore. No spaces."
+            />
           </label>
           <label>
             {f.role === 'CHW' ? 'PIN (6 digits)' : 'Password (10+ characters)'}

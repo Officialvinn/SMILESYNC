@@ -36,8 +36,10 @@ async function request(method: string, path: string, body?: unknown): Promise<Re
   }
   if (res.status === 401 && token) onUnauthorized();
   if (!res.ok) {
-    const data = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(res.status, data?.error ?? `Request failed (${res.status})`);
+    const data = (await res.json().catch(() => null)) as
+      | { error?: string; details?: { path?: (string | number)[]; message?: string }[] }
+      | null;
+    throw new ApiError(res.status, describeError(data, res.status));
   }
   return res;
 }
@@ -57,3 +59,28 @@ export const api = {
     return loginResponseSchema.parse(await (await request('POST', '/auth/login', { username, password })).json());
   },
 };
+
+const FIELD_LABEL: Record<string, string> = {
+  username: 'Username',
+  secret: 'Password or PIN',
+  role: 'Role',
+  chwCode: 'CHW code',
+  assignedSite: 'Site',
+  licenseNumber: 'Licence number',
+  specialty: 'Specialty',
+  adminLevel: 'Admin level',
+};
+
+/** Say which field is wrong and why, not just "Invalid request". */
+export function describeError(
+  data: { error?: string; details?: { path?: (string | number)[]; message?: string }[] } | null,
+  status: number,
+): string {
+  const first = data?.details?.find((d) => d.message);
+  if (first?.message) {
+    const field = first.path?.[0];
+    const label = typeof field === 'string' ? (FIELD_LABEL[field] ?? field) : null;
+    return label ? `${label}: ${first.message}` : first.message;
+  }
+  return data?.error ?? `Request failed (${status})`;
+}
