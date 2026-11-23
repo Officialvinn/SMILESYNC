@@ -18,10 +18,53 @@ patients, confirm where the server is located is acceptable to your
 institution, and that SmileSync's operator is registered with the Office of
 the Data Protection Commissioner as a data controller or processor.
 
+## 0. On AWS (EC2): do these first
+
+Skip this section on any other host.
+
+1. **Disk encryption.** EC2 > Volumes: the instance's volume must show
+   *Encrypted*. If it says *Not encrypted* and the server holds nothing yet, the
+   simplest fix is a new instance: first turn on EC2 > Settings > *EBS encryption*
+   ("Always encrypt new EBS volumes") for the region, then launch again.
+2. **A fixed address.** EC2 > Elastic IPs > Allocate, then *Associate* it with the
+   instance. Without it the public IP changes when the instance stops, and the
+   domain stops working. (AWS bills every public IPv4 address, about US$3.60 a
+   month, whether or not it is an Elastic IP.)
+3. **Security group** (the instance's firewall). Inbound rules:
+   SSH 22 from *My IP* only; HTTP 80 and HTTPS 443 from anywhere (0.0.0.0/0 and ::/0).
+   Nothing else; PostgreSQL 5432 must **not** be open. `ufw` in step 2 is then optional.
+4. **Memory.** A 1 GB instance (t2/t3/t4g.micro) runs SmileSync but runs out of
+   memory while building it. Add swap once, after logging in:
+
+   ```sh
+   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+5. **Log in** with the key pair you chose at launch:
+   `ssh -i ~/path/to/key.pem ubuntu@<elastic-ip>` (`ec2-user@` on Amazon Linux).
+6. **Amazon Linux only** (the Docker script in step 2 needs Ubuntu or Debian):
+
+   ```sh
+   sudo dnf install -y docker git && sudo systemctl enable --now docker
+   sudo mkdir -p /usr/local/lib/docker/cli-plugins
+   sudo curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" \
+     -o /usr/local/lib/docker/cli-plugins/docker-compose
+   sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+   sudo usermod -aG docker ec2-user && exit
+   ```
+   Then skip the Docker and `ufw` lines in step 2.
+7. **Region and the Data Protection Act.** AWS has no region in Kenya, so the data
+   leaves the country (Cape Town `af-south-1` is the closest). The Act allows that
+   only with safeguards, and health data is sensitive personal data. Get your
+   institution's or the ODPC's position before real patients.
+
 ## 1. Point the domain at the server
 
 In your DNS provider, add an **A record**: name `smilesync` (or `@` for the
-bare domain), value = the server's public IP. Check from your Mac:
+bare domain), value = the server's public IP (on AWS, the Elastic IP). For a
+`.tech` domain this is at the registrar you bought it from (for example
+get.tech, Namecheap or GoDaddy), usually under *DNS*, *Manage DNS* or
+*Advanced DNS*. Remove any parked-page A record for the same name. Check from your Mac:
 
 ```sh
 dig +short smilesync.example.org     # must print the server's IP
@@ -53,7 +96,7 @@ Ubuntu with full-disk encryption (LUKS).
 ## 3. Get the code and write `.env`
 
 ```sh
-git clone https://github.com/<you>/SMILESYNC.git smilesync && cd smilesync
+git clone https://github.com/Officialvinn/SMILESYNC.git smilesync && cd smilesync
 cp .env.example .env && chmod 600 .env
 ```
 
