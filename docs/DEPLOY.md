@@ -190,17 +190,14 @@ phones refuse to install it. Never commit it.
 
    ```sh
    cd apps/mobile
-   export SMILESYNC_UPLOAD_STORE_FILE=~/smilesync-upload.jks
-   export SMILESYNC_UPLOAD_KEY_ALIAS=smilesync
-   read -s SMILESYNC_UPLOAD_STORE_PASSWORD && export SMILESYNC_UPLOAD_STORE_PASSWORD
-   export SMILESYNC_UPLOAD_KEY_PASSWORD=$SMILESYNC_UPLOAD_STORE_PASSWORD
    EXPO_PUBLIC_API_URL=https://smilesync.example.org/api npm run build:android
    ```
 
    The APK is at `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
    (about 60 MB). For Google Play, run `./build-release.sh aab` instead.
 
-The script refuses to build without the key or with a localhost address, and
+It uses `~/smilesync-upload.jks` and asks for its password (hidden), checking
+   it before the build starts. The script refuses to build without the key or with a localhost address, and
 never includes the local development certificate. Afterwards, the `android/`
 folder is the release project: run the development `prebuild` from
 `apps/mobile/README.md` again before going back to development.
