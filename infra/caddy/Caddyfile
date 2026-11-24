@@ -25,6 +25,16 @@
 		reverse_proxy api:3000
 	}
 
+	# The CHW app for direct install: https://<site>/download/smilesync.apk
+	# Files come from ./downloads on the server (not in git); see docs/DEPLOY.md.
+	handle /download/* {
+		root * /srv
+		@apk path *.apk
+		header @apk Content-Type "application/vnd.android.package-archive"
+		header Cache-Control "no-cache"
+		file_server
+	}
+
 	# Web dashboard (FR 6-8): static files built by infra/caddy/Dockerfile.
 	handle {
 		root * /srv/web

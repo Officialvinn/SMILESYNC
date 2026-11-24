@@ -30,3 +30,6 @@ apps/web/playwright-report/
 
 # Backups contain patient data (see scripts/backup.sh)
 backups/
+
+# Built app files served at /download/ (copied to the server, never committed)
+/downloads/

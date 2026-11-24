@@ -202,10 +202,25 @@ never includes the local development certificate. Afterwards, the `android/`
 folder is the release project: run the development `prebuild` from
 `apps/mobile/README.md` again before going back to development.
 
+### Publishing it for download
+
+The server offers the app at `https://smilesync.example.org/download/smilesync.apk`.
+After each build, copy it up from your Mac (repo root):
+
+```sh
+scp -i ~/path/to/key.pem apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+  ubuntu@smilesync.example.org:smilesync/downloads/smilesync.apk
+```
+
+The folder must exist before Caddy starts (otherwise Docker creates it owned
+by root): run `mkdir -p ~/smilesync/downloads` on the server once. Anyone with
+the link can download the app, which is fine: it holds no secrets, and nobody
+can use it without an account.
+
 ### Getting it onto CHW phones
 
-- **Direct install (pilot, free):** copy the APK to each phone (USB, or a shared
-  Drive link), open it, allow "Install unknown apps" for that one source when
+- **Direct install (pilot, free):** on each phone, open the download link above in
+  Chrome (or copy the APK over by USB), open the file, allow "Install unknown apps" for that one source when
   asked. Updates: install the new APK over the old one; cases on the phone are kept.
   If a phone has the development build, uninstall that first (different key).
 - **Google Play closed testing ($25 one-time developer account):** upload the
