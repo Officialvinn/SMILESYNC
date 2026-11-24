@@ -24,6 +24,13 @@ describe('FR 1.1 login', () => {
     });
   }
 
+  it('ignores capital letters and spaces around the username (stored lowercase)', async () => {
+    const user = await createUser(h.db, 'DENTIST');
+    const res = await login(`  ${user.username.toUpperCase()} `, CREDENTIALS.DENTIST);
+    expect(res.status).toBe(200);
+    expect(res.body.user.username).toBe(user.username);
+  });
+
   it('a wrong password and an unknown user get the same answer', async () => {
     const user = await createUser(h.db, 'DENTIST');
     const wrong = await login(user.username, 'wrong-password-123');

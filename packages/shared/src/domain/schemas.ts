@@ -19,7 +19,8 @@ export const pinSchema = z.string().regex(/^\d{6}$/, 'PIN must be 6 digits');
 export const passwordSchema = z.string().min(10, 'Password must be at least 10 characters').max(200);
 
 export const loginRequestSchema = z.object({
-  username: z.string().trim().min(3).max(64),
+  /** Usernames are stored lowercase (createUserSchema), so "Dr.Alvin" logs in as dr.alvin. */
+  username: z.string().trim().toLowerCase().min(3).max(64),
   /** Password, or the CHW's PIN. Strength is checked when the credential is set, not at login. */
   password: z.string().min(1).max(200),
 });

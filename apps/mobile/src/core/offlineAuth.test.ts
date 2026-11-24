@@ -63,6 +63,12 @@ describe('AuthService (FR 1.1)', () => {
     expect(r).toMatchObject({ ok: true, session: { user: CHW, offline: true, token: 'token-1' } });
   });
 
+  it('ignores capital letters in the username, online and offline', async () => {
+    expect(await auth.login('  CHW.Narok1 ', PIN)).toMatchObject({ ok: true });
+    api.mode = 'offline';
+    expect(await auth.login('Chw.Narok1', PIN)).toMatchObject({ ok: true, session: { offline: true } });
+  });
+
   it('treats a server error like no internet, so a down server does not stop field work', async () => {
     await auth.login(CHW.username, PIN);
     api.mode = 'serverError';

@@ -90,7 +90,7 @@ export class AuthService {
   constructor(private readonly deps: { api: AuthApi; kv: SecureKV; hasher: PinHasher }) {}
 
   async login(usernameInput: string, pin: string): Promise<LoginResult> {
-    const username = usernameInput.trim();
+    const username = usernameInput.trim().toLowerCase(); // stored lowercase on the server
     if (!pinSchema.safeParse(pin).success) return { ok: false, message: 'PIN must be 6 digits' };
 
     let res: LoginResponse;
