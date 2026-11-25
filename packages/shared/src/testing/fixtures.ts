@@ -1,5 +1,5 @@
 /**
- * Synthetic test data only. Never use real patient data (CLAUDE.md rule 5).
+ * Synthetic test data only. Never use real patient data (project rule: synthetic data only).
  */
 import { generateAnonId } from '../domain/anonId.js';
 import type { ViewType } from '../domain/enums.js';

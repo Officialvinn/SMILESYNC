@@ -1,6 +1,6 @@
 /**
  * Synthetic "oral photos" for seed data: simple drawings of teeth, never real
- * patients (CLAUDE.md rule 5). Encoded as PNG with Node's zlib, so no image
+ * patients (project rule: synthetic data only). Encoded as PNG with Node's zlib, so no image
  * library is needed. The API serves them as image/png.
  */
 import { crc32, deflateSync } from 'node:zlib';
