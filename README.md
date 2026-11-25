@@ -9,6 +9,47 @@ Requirements are in [docs/SmileSync_SRS.md](docs/SmileSync_SRS.md), with UML dia
 [docs/diagrams/](docs/diagrams/). The mapping from each requirement to code and tests
 is in [docs/TRACEABILITY.md](docs/TRACEABILITY.md).
 
+## Try it now (live deployment)
+
+| What | Link |
+|---|---|
+| Dentist and admin dashboard | <https://smilesync.alvinn.tech> |
+| CHW Android app (APK, about 60 MB) | <https://smilesync.alvinn.tech/download/smilesync.apk> |
+| Requirements (SRS) | [docs/SmileSync_SRS.md](docs/SmileSync_SRS.md) |
+| System design (UML) | [docs/diagrams/](docs/diagrams/) |
+
+The live server holds **synthetic data only**. Demo logins for each role (CHW,
+dentist, administrator) are given with the submission, not in this public repo.
+
+### Install the CHW app on an Android phone
+
+Works on Android 7.0 or newer. Not available for iPhone.
+
+1. On the phone, open <https://smilesync.alvinn.tech/download/smilesync.apk> in Chrome.
+2. When the download finishes, tap the file (or open it from **Downloads**).
+3. If Android says the source is not allowed, tap **Settings**, turn on
+   **Allow from this source** for Chrome, then go back.
+4. Tap **Install**, then **Open**.
+5. Log in with a CHW username and PIN. The **first** login needs internet; after
+   that the app works offline (airplane mode) and sends cases when the phone
+   reconnects.
+
+If Play Protect warns that the app is unknown, tap **More details**, then
+**Install anyway**. The app is signed by the project, not published on Google Play.
+
+### Walk through the main flow
+
+1. **CHW (phone):** log in, register a patient, record consent, take the three
+   photos (front, upper arch, lower arch), answer the symptom questions, save.
+   Works in airplane mode; the case is *Pending* until it is sent.
+2. Turn the internet back on: the case sends by itself and becomes *Synced*.
+3. **Dentist (dashboard):** log in, open the case from the queue, zoom the
+   photos, set a priority, write notes and optional referral advice, save.
+4. **CHW (phone):** on the next sync (open the app, or tap **Send now**) the
+   case shows *Reviewed* with the dentist's priority and advice.
+5. **Administrator (dashboard):** manage users under **Users**, and see every
+   access to patient data under **Audit log**.
+
 ## Repository layout
 
 ```
@@ -20,17 +61,27 @@ infra/            Caddy (TLS 1.3) and PostgreSQL init scripts
 docs/             SRS, diagrams, traceability
 ```
 
-## Prerequisites
+## Run it on your own computer
 
-- Node.js 24
-- Docker Desktop, for PostgreSQL and the local stack
-- For the mobile app on a device: Android Studio, or Xcode with CocoaPods. See `apps/mobile/README.md`
+### Prerequisites
 
-## First-time setup
+- Git
+- Node.js 24 (from <https://nodejs.org>; check with `node -v`)
+- Docker Desktop (from <https://www.docker.com/products/docker-desktop/>), started
+  before the steps below. It runs PostgreSQL, the API, the dashboard and Caddy.
+- Only to build the mobile app yourself: Android Studio and JDK 17. See
+  [apps/mobile/README.md](apps/mobile/README.md). To just try the app, use the
+  APK above instead.
+
+To put it on your own server and domain, follow [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### First-time setup
 
 ```sh
+git clone https://github.com/Officialvinn/SMILESYNC.git
+cd SMILESYNC
 npm install
-cp .env.example .env     # fill in every value; the file explains how to generate secrets
+cp .env.example .env     # then fill in every value; the file explains how to generate each secret
 ```
 
 ## Run the local stack (PostgreSQL, API, dashboard, Caddy)
