@@ -8,7 +8,6 @@ coverage/
 *.log
 .DS_Store
 # Original docs package; its contents are unpacked into the repo
-SmileSync_claude_code_package.zip
 # Local data
 /data/
 apps/api/storage/
