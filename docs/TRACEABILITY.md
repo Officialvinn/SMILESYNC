@@ -3,13 +3,13 @@
 Status key: **Done** = implemented and tested. **Partial** = some parts done, the rest is
 planned for the sprint shown. **Planned** = not started. Paths are relative to the repo root.
 
-Last updated: Hardening (2026-11-19).
+Last updated: Deployment (2026-11-25).
 
 ## Functional requirements
 
 | ID | Requirement | Status | Code | Tests |
 |---|---|---|---|---|
-| FR 1.1 | Login with username and password (PIN on mobile) | Done. Server login; mobile login online first, then offline against a bcrypt PIN hash in the Keychain/Keystore. The server's answer wins; 5 wrong offline PINs wipe the offline credential. Token refresh on sync in Sprint 2 | `apps/api/src/routes/auth.ts`, `apps/mobile/src/core/offlineAuth.ts`, `apps/mobile/src/screens/LoginScreen.tsx` | `apps/api/test/auth.test.ts`, `apps/mobile/src/core/offlineAuth.test.ts` |
+| FR 1.1 | Login with username and password (PIN on mobile) | Done. Server login; mobile login online first, then offline against a bcrypt PIN hash in the Keychain/Keystore. The server's answer wins; 5 wrong offline PINs wipe the offline credential. Token refresh on sync in Sprint 2. Usernames are not case-sensitive (stored lowercase; login lowercases them, online and offline) | `apps/api/src/routes/auth.ts`, `apps/mobile/src/core/offlineAuth.ts`, `apps/mobile/src/screens/LoginScreen.tsx` | `apps/api/test/auth.test.ts`, `apps/mobile/src/core/offlineAuth.test.ts` |
 | FR 1.2 | Role-based access (CHW, Dentist, Administrator) | Done (server and shared rules) | `packages/shared/src/access/permissions.ts`, `apps/api/src/http/auth.ts`, `apps/api/src/routes/planned.ts` | `packages/shared/src/access/permissions.test.ts`, `apps/api/test/access.test.ts` |
 | FR 2.1 | Enter patient name, age, location | Done on the phone (name, age, county, optional sex). Name encrypted on the server (API) and on the phone (SQLCipher). Upload in Sprint 2 | `apps/mobile/src/core/registration.ts`, `apps/mobile/src/screens/PatientScreen.tsx`, `apps/api/src/security/fieldCrypto.ts` | `apps/mobile/src/core/registration.test.ts`, `schemas.test.ts` |
 | FR 2.2 | Generate anonymised patient ID | Done. Generated on the phone at registration, with no network | `packages/shared/src/domain/anonId.ts`, `apps/mobile/src/core/registration.ts` | `anonId.test.ts`, `registration.test.ts` |
@@ -41,7 +41,7 @@ Last updated: Hardening (2026-11-19).
 | NFR 4 | Audit log kept 12+ months, not editable | Done. Trigger blocks UPDATE, DELETE and TRUNCATE for everyone; runtime role has insert and select only; nothing deletes rows | migration `..._audit_and_constraints`, `infra/postgres/init/01-roles.sh` | `auditLog.test.ts` |
 | NFR 5 | Android 9+, iOS 14+, Chrome/Edge/Safari | Partial. Android: verified on a Pixel 7 Pro and the emulator (minimum API 24). Dashboard: Playwright happy path passes in Chromium (Chrome, Edge) and WebKit (Safari). **iOS: not built; Expo SDK 57 needs iOS 16.4+ (open question 7)** | `apps/mobile/app.json`, `apps/web/playwright.config.ts` | `dentist.spec.ts` (chromium, webkit) |
 | NFR 6 | Kenya Data Protection Act 2019 | Partial. Consent first and recorded with time; names hidden from dentists and admins; EXIF (including GPS) not requested and dropped by re-encoding; location, microphone and storage permissions blocked; Android backup off; drafts deletable on withdrawn consent; synthetic data only. Uploaded photos of cases that never arrive are deleted after 7 days. Server-side erasure still has no path | `permissions.ts`, `apps/mobile/src/core/`, `apps/mobile/app.json` | `permissions.test.ts`, `caseRepo.test.ts` |
-| NFR 7 | 99.5% monthly uptime | Partial for the local demo: services restart automatically and have health checks; backup, verify and restore scripts (verify proved a full restore). Uptime itself depends on hosting, still to be chosen | `docker-compose.yml`, `scripts/` | `scripts/verify-backup.sh` |
+| NFR 7 | 99.5% monthly uptime | Partial for the local demo: services restart automatically and have health checks; backup, verify and restore scripts (verify proved a full restore). Deployed 2026-11-24 on one AWS EC2 instance (see Deployment below); one instance cannot guarantee 99.5%, and uptime is not yet monitored | `docker-compose.yml`, `scripts/` | `scripts/verify-backup.sh` |
 
 ## Differences from the class diagram (B.2)
 
@@ -72,6 +72,9 @@ Last updated: Hardening (2026-11-19).
 | Not shown | `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`, image download, admin users, audit log | Added |
 
 ## Open questions
+
+None of these has been answered yet; the build follows the default shown in each.
+
 
 1. **Sex field.** FR 2.1 lists name, age and location only. Should sex be collected?
 2. **Queue sort.** Synced cases have no priority, so `sort=priority` cannot order the queue. **Sprint 3 default: highest pain first, then oldest** (oldest first is one click away). Confirm or overrule.
@@ -129,3 +132,19 @@ getting security fixes sooner. **Open question 7.**
 | Phone locks after 5 minutes in the background | `apps/mobile/src/core/appLock.ts`, `appLock.test.ts` |
 | Automated accessibility: axe WCAG 2.1 AA on every dashboard page; phone contrast | `apps/web/e2e/accessibility.spec.ts`, `contrast.test.ts` |
 | Backups | `scripts/backup.sh`, `scripts/verify-backup.sh`, `scripts/restore.sh` |
+
+## Deployment (2026-11-24 to 2026-11-25)
+
+| Item | Where |
+|---|---|
+| Live dashboard and API: https://smilesync.alvinn.tech (AWS EC2, Ubuntu 24.04, docker compose; Let's Encrypt certificate; TLS 1.3 only, TLS 1.2 refused; HSTS and CSP headers; HTTP redirects to HTTPS; database and API ports closed to the internet) (NFR 1) | `docker-compose.yml`, `infra/caddy/Caddyfile`, `docs/DEPLOY.md` |
+| First administrator on an empty server (FR 8.1) | `apps/api/prisma/createAdmin.ts` |
+| Signed Android release, Android 7.0+ (API 24), trusts only system certificate authorities (NFR 1, NFR 5) | `apps/mobile/build-release.sh`, `apps/mobile/plugins/withReleaseSigning.js`, `apps/mobile/plugins/withNetworkSecurity.js` |
+| APK download: https://smilesync.alvinn.tech/download/smilesync.apk | `infra/caddy/Caddyfile` (`/download/*`), `apps/mobile/CHANGELOG.md` |
+| Clearer form errors on the Users page: which field is wrong and why (FR 8.1) | `apps/web/src/api.ts`, `apps/web/src/lib/describeError.test.ts` |
+| Case-insensitive usernames (FR 1.1) | `packages/shared/src/domain/schemas.ts`, `apps/mobile/src/core/offlineAuth.ts`, `apps/api/test/auth.test.ts`, `offlineAuth.test.ts` |
+
+Data protection (NFR 6): the server is in the US (us-east-1), because AWS has no
+region in Kenya. Health data leaving Kenya needs safeguards under the Data
+Protection Act 2019; get the institution's or the ODPC's position before any
+real patient data. Until then the server holds synthetic data only.
