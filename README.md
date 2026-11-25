@@ -50,6 +50,27 @@ If Play Protect warns that the app is unknown, tap **More details**, then
 5. **Administrator (dashboard):** manage users under **Users**, and see every
    access to patient data under **Audit log**.
 
+## System design at a glance
+
+The full requirements are in the [SRS](docs/SmileSync_SRS.md) (FR 1-8, NFR 1-7). The
+SRS's three actors map onto the two apps like this:
+
+| Actor | Where | Use cases (SRS Appendix B.1) | Requirements |
+|---|---|---|---|
+| Community health worker (CHW) | Android app | Log in (also offline with a PIN), register patient, record consent, capture 3+ guided photos (compressed under 2 MB), symptom questionnaire, save offline, automatic sync with retry, see status and the dentist's result | FR 1.1, 2.1-2.3, 3.1-3.3, 4.1-4.2, 5.1-5.3, 7.3 |
+| Dentist | Web dashboard | Case queue, filter and sort, zoom photos, assign Routine / Urgent / Emergency, write notes and referral advice | FR 1.1, 6.1-6.3, 7.1-7.2 |
+| Administrator | Web dashboard | Create, deactivate and reset users; read the append-only audit log | FR 1.2, 8.1-8.2, NFR 4 |
+
+Case status follows the SRS: **Pending** (saved on the phone) → **Synced** (on the
+server, waiting for a dentist) → **Reviewed** (dentist has triaged it).
+
+| Use case | Class | Sequence | Activity |
+|---|---|---|---|
+| [![Use case diagram](docs/diagrams/1_use_case.png)](docs/diagrams/1_use_case.png) | [![Class diagram](docs/diagrams/2_class.png)](docs/diagrams/2_class.png) | [![Sequence diagram](docs/diagrams/3_sequence.png)](docs/diagrams/3_sequence.png) | [![Activity diagram](docs/diagrams/4_activity.png)](docs/diagrams/4_activity.png) |
+
+[docs/TRACEABILITY.md](docs/TRACEABILITY.md) links every FR and NFR to the code
+and tests that implement it, and says honestly which ones are partial.
+
 ## Repository layout
 
 ```
